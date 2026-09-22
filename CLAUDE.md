@@ -12,5 +12,6 @@
 - Work only in your assigned worktree. One phase per agent, defined in tasks/P*.md.
 - Done means the phase acceptance tests are green. Nothing else counts.
 - Green: open a PR. Never push main. Never set ALLOW_MAIN_PUSH.
+- "Never push main" is convention-enforced: server-side branch protection is unavailable on this repo's plan (free private), so `.github/workflows/guard-main.yml` flags — but cannot block — any commit on main without an associated PR. Upgrade to Pro or make the repo public to enable real protection.
 - No deploys. No pm2, nginx, cron, sync-all. Build and test only.
 - Secrets are out of scope. A task that seems to need a key you lack: stop, flag it in the PR.
