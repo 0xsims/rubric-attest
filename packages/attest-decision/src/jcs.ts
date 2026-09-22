@@ -48,25 +48,39 @@ function serialize(v: unknown): string {
       throw new JcsError("non-plain object is not JSON-canonicalizable");
     }
     const obj = v as Record<string, unknown>;
-    // Keep only JSON-valued properties (mirror JSON.stringify object semantics).
-    const keys = Object.keys(obj).filter((k) => {
-      const val = obj[k];
-      return val !== undefined && typeof val !== "function" && typeof val !== "symbol";
-    });
     // Default sort compares by UTF-16 code unit — the RFC 8785 ordering.
-    keys.sort();
-    return "{" + keys.map((k) => JSON.stringify(k) + ":" + serialize(obj[k])).join(",") + "}";
+    const keys = Object.keys(obj).sort();
+    return (
+      "{" +
+      keys
+        .map((k) => {
+          const val = obj[k];
+          rejectNonJson(val, `property '${k}'`);
+          return JSON.stringify(k) + ":" + serialize(val);
+        })
+        .join(",") +
+      "}"
+    );
   }
 
   // undefined, function, symbol at the top level.
   throw new JcsError(`unsupported value of type '${t}'`);
 }
 
-function serializeElement(el: unknown): string {
-  // In arrays, non-JSON slots become null (mirror JSON.stringify array semantics).
-  if (el === undefined || typeof el === "function" || typeof el === "symbol") {
-    return "null";
+/**
+ * Spec §3.3: `undefined`, functions, and symbols MUST NOT appear in a payload —
+ * we reject rather than silently stripping them, so a malformed producer input
+ * cannot canonicalize to bytes that differ from the producer's intent.
+ */
+function rejectNonJson(value: unknown, where: string): void {
+  const t = typeof value;
+  if (value === undefined || t === "function" || t === "symbol") {
+    throw new JcsError(`${where} has non-JSON value of type '${value === undefined ? "undefined" : t}'`);
   }
+}
+
+function serializeElement(el: unknown): string {
+  rejectNonJson(el, "array element");
   return serialize(el);
 }
 

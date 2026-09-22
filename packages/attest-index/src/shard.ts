@@ -66,9 +66,32 @@ export class Shard {
     this.insertStmt.run(row);
   }
 
-  /** Idempotent bulk upsert in one transaction. Returns the count written. */
+  /** Idempotent bulk upsert in one transaction. Throws on any row error. */
   insertBatch(rows: IndexRow[]): number {
     return this.insertMany(rows);
+  }
+
+  /**
+   * Idempotent bulk upsert with per-row error isolation, in one transaction.
+   * A row that violates a constraint (e.g. a conflicting duplicate decisionId)
+   * is skipped and counted in `failed` — the good rows still commit. This is
+   * what keeps backfill robust: one bad bundle cannot roll back a whole shard.
+   */
+  insertResilient(rows: IndexRow[]): { written: number; failed: number } {
+    let written = 0;
+    let failed = 0;
+    const run = this.db.transaction((rs: IndexRow[]) => {
+      for (const r of rs) {
+        try {
+          this.insertStmt.run(r);
+          written++;
+        } catch {
+          failed++;
+        }
+      }
+    });
+    run(rows);
+    return { written, failed };
   }
 
   byDecisionId(decisionId: string): IndexRow | undefined {

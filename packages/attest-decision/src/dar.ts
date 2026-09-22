@@ -28,6 +28,10 @@ export class DarBuilder {
   private readonly newDecisionId: () => string;
   private readonly now: () => number;
   private readonly heads = new Map<string, string>();
+  // Keyed by object identity: reusing the same schema object across build()
+  // calls skips re-hashing. CONTRACT: schema objects must be treated as
+  // immutable — mutating one in place after its first build() would return the
+  // stale cached hash. Distinct objects with identical contents are re-hashed.
   private readonly schemaCache = new WeakMap<object, HashString>();
 
   constructor(deps: DarBuilderDeps = {}) {

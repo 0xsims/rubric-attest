@@ -49,6 +49,7 @@ export class Spool {
   private ackedThrough = 0;
   private bytes = 0;
   private droppedForCap = 0;
+  private compactionPending = false;
   private pendingRecords: SpoolRecord[] = [];
 
   constructor(path: string, options: SpoolOptions = {}) {
@@ -78,7 +79,9 @@ export class Spool {
 
   /**
    * Append a record durably (single `writeSync`, no fsync). Returns its seq.
-   * Compacts synchronously if the file has grown past `maxBytes`.
+   * Never compacts inline — that would put a multi-MB `writeFileSync`+`fsync` on
+   * the caller's `attest()` path. Crossing the cap only flags compaction, which
+   * `compactIfNeeded()` performs off the caller path (see the Attestor flush).
    */
   append(dar: DarCore): number {
     const seq = ++this.seq;
@@ -88,8 +91,20 @@ export class Spool {
     writeSync(this.fd, buf);
     this.bytes += buf.byteLength;
     this.pendingRecords.push(record);
-    if (this.bytes > this.maxBytes) this.compact();
+    if (this.bytes > this.maxBytes) this.compactionPending = true;
     return seq;
+  }
+
+  /** Whether the file has grown past the cap and awaits compaction. */
+  needsCompaction(): boolean {
+    return this.compactionPending;
+  }
+
+  /** Reclaim acked space and enforce the cap (drop-oldest). Off the caller path. */
+  compactIfNeeded(): void {
+    if (!this.compactionPending) return;
+    this.compact();
+    this.compactionPending = false;
   }
 
   /**

@@ -58,6 +58,7 @@ describe("backfill", () => {
     const r = backfill(store, indexDir);
     expect(r.bundleFiles).toBe(6);
     expect(r.rowsWritten).toBe(4);
+    expect(r.failed).toBe(0);
     expect(r.skipped).toBe(2);
     expect(r.days).toEqual(["2025-09-22", "2025-09-23"]);
 
@@ -102,9 +103,64 @@ describe("backfill", () => {
     rmSync(indexDir, { recursive: true, force: true });
     const rebuilt = backfill(store, indexDir);
     expect(rebuilt.rowsWritten).toBe(4);
+    expect(rebuilt.failed).toBe(0);
     const index = new Index(indexDir, { readonly: true });
     expect(index.count()).toBe(4);
     expect(index.byDecisionId("A2")?.prev).toBe("A1");
+    index.close();
+  });
+
+  it("skips a malformed bundle (missing NOT NULL fields) without aborting the backfill", () => {
+    // Missing schemaHash/decisionHash/leafType — would throw NOT NULL mid-insert
+    // under a single-transaction batch. isBundle now rejects it up front.
+    writeFileSync(
+      join(store, "bad.json"),
+      JSON.stringify({
+        attestationId: "att-BAD",
+        dar: { v: "DAR/0.1", decisionId: "BAD", agentId: "agent://A", ts: "2025-09-22T00:00:09.000Z", prev: null, decision: {} },
+      }),
+    );
+    const r = backfill(store, indexDir);
+    expect(r.rowsWritten).toBe(4); // the 4 good bundles still land
+    expect(r.failed).toBe(0);
+    expect(r.skipped).toBe(3); // notabundle, broken, bad
+    const index = new Index(indexDir, { readonly: true });
+    expect(index.count()).toBe(4);
+    expect(index.byDecisionId("BAD")).toBeUndefined();
+    index.close();
+  });
+
+  it("skips a bundle with an unparseable ts without aborting the backfill", () => {
+    writeFileSync(
+      join(store, "badts.json"),
+      JSON.stringify({
+        attestationId: "att-BADTS",
+        dar: { v: "DAR/0.1", decisionId: "BADTS", agentId: "agent://A", ts: "not-a-date", prev: null, leafType: "decision", schemaHash: "sha3-256:s1", decisionHash: "sha3-256:z", decision: {} },
+      }),
+    );
+    const r = backfill(store, indexDir);
+    expect(r.rowsWritten).toBe(4);
+    expect(r.skipped).toBe(3);
+    const index = new Index(indexDir, { readonly: true });
+    expect(index.byDecisionId("BADTS")).toBeUndefined();
+    index.close();
+  });
+
+  it("isolates a conflicting duplicate decisionId: good rows land, the dup is counted as failed", () => {
+    // A different attestation claims an existing decisionId (A1) on the same day
+    // -> UNIQUE(decisionId) violation. Must not roll back the whole shard.
+    writeFileSync(
+      join(store, "dup.json"),
+      JSON.stringify({
+        attestationId: "att-DUP",
+        dar: { v: "DAR/0.1", decisionId: "A1", agentId: "agent://A", ts: "2025-09-22T00:00:01.000Z", prev: null, leafType: "decision", schemaHash: "sha3-256:s1", decisionHash: "sha3-256:other", decision: {} },
+      }),
+    );
+    const r = backfill(store, indexDir);
+    expect(r.rowsWritten).toBe(4);
+    expect(r.failed).toBe(1);
+    const index = new Index(indexDir, { readonly: true });
+    expect(index.count()).toBe(4);
     index.close();
   });
 });

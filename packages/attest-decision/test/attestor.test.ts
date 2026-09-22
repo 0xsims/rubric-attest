@@ -108,6 +108,30 @@ describe("durability — retry and recovery", () => {
     await a.close();
   });
 
+  it("close() retries a transiently failing final flush", async () => {
+    const t = new MockTransport();
+    t.failuresLeft = 2; // first two send attempts throw, third succeeds
+    const a = new Attestor({ transport: t, spoolPath, retryMs: 5, closeRetries: 3 });
+    a.attest(input(1));
+    await a.close();
+    expect(t.sent.map((d) => d.decision.n)).toEqual([1]);
+  });
+
+  it("close() leaves records durably spooled when all retries fail; a later run delivers them", async () => {
+    const failing = new MockTransport();
+    failing.failuresLeft = 999;
+    const a = new Attestor({ transport: failing, spoolPath, retryMs: 1, closeRetries: 1 });
+    const id = a.attest(input(1));
+    await a.close();
+    expect(failing.sent.length).toBe(0);
+
+    const t = new MockTransport();
+    const a2 = new Attestor({ transport: t, spoolPath });
+    await waitFor(() => t.sent.length === 1);
+    expect(t.sent[0]!.decisionId).toBe(id);
+    await a2.close();
+  });
+
   it("drains records left in the spool by a previous run", async () => {
     // First run: transport hangs, so nothing is acked; records persist in spool.
     const hung = new MockTransport();

@@ -23,6 +23,29 @@ describe("JCS canonicalization (RFC 8785)", () => {
     expect(canonicalize({ a: 1, b: 2 })).toBe(canonicalize({ b: 2, a: 1 }));
   });
 
+  it("serializes RFC 8785 number stress values like ES Number::toString", () => {
+    expect(
+      canonicalize({
+        a: 9.999999999999997e22,
+        b: 5e-324, // min subnormal double
+        c: 1e21, // exponential-notation boundary
+        d: 9007199254740992, // 2^53
+        e: 1.7976931348623157e308, // max double
+        f: -0, // -> "0"
+      }),
+    ).toBe(
+      '{"a":9.999999999999997e+22,"b":5e-324,"c":1e+21,"d":9007199254740992,"e":1.7976931348623157e+308,"f":0}',
+    );
+  });
+
+  it("sorts object keys by UTF-16 code unit including surrogate pairs", () => {
+    const obj: Record<string, number> = {};
+    obj["￿"] = 1;
+    obj["\u{1f600}"] = 2; // astral: leading unit 0xD83D < 0xFFFF, so it sorts first
+    obj["a"] = 3;
+    expect(canonicalize(obj)).toBe('{"a":3,"\u{1f600}":2,"￿":1}');
+  });
+
   it("escapes control chars as lowercase \\u00XX and uses short escapes", () => {
     // BS/TAB/LF/FF/CR use two-char escapes; other C0 (0x00, 0x1f) use \u00xx;
     // quote and backslash are escaped; forward slash is not.
@@ -49,8 +72,12 @@ describe("JCS canonicalization (RFC 8785)", () => {
     expect(() => canonicalize(new Map())).toThrow(JcsError);
   });
 
-  it("mirrors JSON semantics for undefined (omit in object, null in array)", () => {
-    expect(canonicalize({ a: undefined, b: 1 })).toBe('{"b":1}');
-    expect(canonicalize([undefined, 1])).toBe("[null,1]");
+  it("rejects undefined/function/symbol per spec §3.3 (no silent stripping)", () => {
+    expect(() => canonicalize({ a: undefined, b: 1 })).toThrow(JcsError);
+    expect(() => canonicalize([undefined, 1])).toThrow(JcsError);
+    expect(() => canonicalize({ f: () => 1 })).toThrow(JcsError);
+    expect(() => canonicalize({ s: Symbol("x") })).toThrow(JcsError);
+    // null is valid JSON and is kept.
+    expect(canonicalize({ a: null })).toBe('{"a":null}');
   });
 });
