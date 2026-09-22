@@ -1,6 +1,6 @@
 {
   "name": "@rubric/evidence",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Rubric evidence export CLI: offline evidence bundles from index shards + bundle store",
   "license": "Apache-2.0",
@@ -28,8 +28,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@rubric/attest-decision": "^0.1.0",
-    "@rubric/attest-index": "^0.1.0",
-    "@rubric/verify": "^0.1.0"
+    "@rubric/attest-decision": "^1.0.0",
+    "@rubric/attest-index": "^1.0.0",
+    "@rubric/verify": "^1.0.0"
   }
 }

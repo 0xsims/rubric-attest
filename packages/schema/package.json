@@ -1,6 +1,6 @@
 {
   "name": "@rubric/schema",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Rubric adapter: JSON Schema / Zod (zod-to-json-schema) -> DAR inputs",
   "license": "Apache-2.0",
@@ -25,7 +25,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@rubric/attest-decision": "^0.1.0",
+    "@rubric/attest-decision": "^1.0.0",
     "zod": "^3.23.8",
     "zod-to-json-schema": "^3.24.1"
   }

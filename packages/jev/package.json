@@ -1,6 +1,6 @@
 {
   "name": "@rubric/jev",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Rubric adapter: Jev decision shape -> DAR inputs (mapping confined here)",
   "license": "Apache-2.0",
@@ -25,6 +25,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@rubric/attest-decision": "^0.1.0"
+    "@rubric/attest-decision": "^1.0.0"
   }
 }
