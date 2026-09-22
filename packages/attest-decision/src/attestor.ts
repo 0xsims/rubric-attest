@@ -23,6 +23,8 @@ export interface AttestorOptions {
   maxWaitMs?: number;
   maxSpoolBytes?: number;
   retryMs?: number;
+  /** Max re-send attempts per batch during close() before leaving it spooled. */
+  closeRetries?: number;
   now?: () => number;
   newDecisionId?: () => string;
   onError?: (err: unknown) => void;
@@ -36,6 +38,7 @@ interface QueueItem {
 }
 
 const sleep0 = (): Promise<void> => new Promise((r) => setImmediate(r));
+const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export class Attestor {
   private readonly builder: DarBuilder;
@@ -44,6 +47,7 @@ export class Attestor {
   private readonly maxBatch: number;
   private readonly maxWaitMs: number;
   private readonly retryMs: number;
+  private readonly closeRetries: number;
   private readonly onError?: (err: unknown) => void;
 
   private queue: QueueItem[] = [];
@@ -61,6 +65,7 @@ export class Attestor {
     this.maxBatch = options.maxBatch ?? 64;
     this.maxWaitMs = options.maxWaitMs ?? 5000;
     this.retryMs = options.retryMs ?? 1000;
+    this.closeRetries = options.closeRetries ?? 3;
     this.onError = options.onError;
 
     if (options.autoRecover !== false) this.recover();
@@ -93,6 +98,7 @@ export class Attestor {
     this.clearTimer();
     const batch = this.queue.splice(0, this.maxBatch);
     try {
+      this.spool.compactIfNeeded(); // enforce the 50 MB cap off the caller path
       this.spool.fsync();
       await this.transport.send(batch.map((b) => b.dar));
       this.spool.ack(batch[batch.length - 1]!.seq);
@@ -121,21 +127,36 @@ export class Attestor {
     return this.queue.length;
   }
 
-  /** Stop accepting records, best-effort drain, and close the spool. */
+  /**
+   * Stop accepting records, drain the queue (retrying each batch up to
+   * `closeRetries` times), and close the spool. Anything still undelivered after
+   * the retries remains durably spooled for the next run's recovery.
+   */
   async close(): Promise<void> {
     this.closed = true;
     this.clearTimer();
-    try {
-      while (this.flushing) await sleep0();
-      while (this.queue.length > 0) {
-        const batch = this.queue.splice(0, this.maxBatch);
-        this.spool.fsync();
-        await this.transport.send(batch.map((b) => b.dar));
-        this.spool.ack(batch[batch.length - 1]!.seq);
+    while (this.flushing) await sleep0();
+    this.spool.compactIfNeeded();
+    while (this.queue.length > 0) {
+      const batch = this.queue.splice(0, this.maxBatch);
+      let delivered = false;
+      for (let attempt = 0; attempt <= this.closeRetries; attempt++) {
+        try {
+          this.spool.fsync();
+          await this.transport.send(batch.map((b) => b.dar));
+          this.spool.ack(batch[batch.length - 1]!.seq);
+          delivered = true;
+          break;
+        } catch (err) {
+          this.reportError(err);
+          if (attempt < this.closeRetries) await delay(this.retryMs);
+        }
       }
-    } catch (err) {
-      // Undrained records remain durably spooled for the next run's recovery.
-      this.reportError(err);
+      if (!delivered) {
+        // Give up: leave this batch (and the rest) durably spooled for recovery.
+        this.queue.unshift(...batch);
+        break;
+      }
     }
     this.spool.close();
   }

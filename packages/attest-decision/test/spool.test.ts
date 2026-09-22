@@ -78,10 +78,14 @@ describe("Spool", () => {
     s.close();
   });
 
-  it("enforces the byte cap by dropping oldest", () => {
-    // Tiny cap so a few records trigger compaction.
+  it("enforces the byte cap by dropping oldest (compaction is deferred off the append path)", () => {
+    // Tiny cap so a few records trip the cap.
     const s = new Spool(path, { maxBytes: 400 });
     for (let i = 1; i <= 50; i++) s.append(dar(i));
+    // append() only flags; nothing is dropped until compactIfNeeded() runs.
+    expect(s.needsCompaction()).toBe(true);
+    expect(s.pending().length).toBe(50);
+    s.compactIfNeeded();
     const pending = s.pending();
     expect(pending.length).toBeGreaterThan(0);
     expect(pending.length).toBeLessThan(50);

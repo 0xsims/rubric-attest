@@ -21,6 +21,7 @@ export class Index {
   private readonly dir: string;
   private readonly readOnly: boolean;
   private readonly shards = new Map<string, Shard>();
+  private dayCache: string[] | null = null;
 
   constructor(dir: string, options: IndexOptions = {}) {
     this.dir = dir;
@@ -28,30 +29,35 @@ export class Index {
     if (!this.readOnly) mkdirSync(dir, { recursive: true });
   }
 
-  /** Day keys with an existing shard file, ascending. */
+  /** Day keys with an existing shard file, ascending. Cached per instance. */
   shardDays(): string[] {
+    if (this.dayCache) return this.dayCache;
     let names: string[];
     try {
       names = readdirSync(this.dir);
     } catch {
-      return [];
+      this.dayCache = [];
+      return this.dayCache;
     }
-    return names
+    this.dayCache = names
       .map(dayKeyFromFileName)
       .filter((k): k is string => k !== null)
       .sort();
+    return this.dayCache;
   }
 
   private shardForDay(day: string, createIfMissing: boolean): Shard | undefined {
     const cached = this.shards.get(day);
     if (cached) return cached;
-    const path = join(this.dir, shardFileName(day));
-    if (this.readOnly || !createIfMissing) {
-      // Only open if the file already exists (readonly open throws otherwise).
-      if (!this.shardDays().includes(day)) return undefined;
-    }
-    const shard = new Shard(path, { readonly: this.readOnly });
+    const exists = this.shardDays().includes(day);
+    // Readonly / query paths must not create a shard file that isn't there.
+    if (!exists && (this.readOnly || !createIfMissing)) return undefined;
+    const shard = new Shard(join(this.dir, shardFileName(day)), { readonly: this.readOnly });
     this.shards.set(day, shard);
+    if (!exists && this.dayCache) {
+      this.dayCache.push(day);
+      this.dayCache.sort();
+    }
     return shard;
   }
 
@@ -64,16 +70,37 @@ export class Index {
 
   /** Idempotent bulk write. Rows may span days; each is routed to its shard. */
   writeBatch(rows: IndexRow[]): number {
+    let n = 0;
+    for (const [day, dayRows] of this.groupByDay(rows)) {
+      n += this.shardForDay(day, true)!.insertBatch(dayRows);
+    }
+    return n;
+  }
+
+  /**
+   * Idempotent bulk write with per-row error isolation (for backfill). A row
+   * that fails to insert (e.g. a conflicting duplicate decisionId) is counted
+   * in `failed` rather than aborting its shard. Rows must already have a valid
+   * day key (callers validate `ts` up front).
+   */
+  writeBatchResilient(rows: IndexRow[]): { written: number; failed: number } {
+    let written = 0;
+    let failed = 0;
+    for (const [day, dayRows] of this.groupByDay(rows)) {
+      const r = this.shardForDay(day, true)!.insertResilient(dayRows);
+      written += r.written;
+      failed += r.failed;
+    }
+    return { written, failed };
+  }
+
+  private groupByDay(rows: IndexRow[]): Map<string, IndexRow[]> {
     const byDay = new Map<string, IndexRow[]>();
     for (const r of rows) {
       const day = shardKeyForTs(r.ts);
       (byDay.get(day) ?? byDay.set(day, []).get(day)!).push(r);
     }
-    let n = 0;
-    for (const [day, dayRows] of byDay) {
-      n += this.shardForDay(day, true)!.insertBatch(dayRows);
-    }
-    return n;
+    return byDay;
   }
 
   private openShards(): Shard[] {

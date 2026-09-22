@@ -22,11 +22,13 @@ interface ChildResult {
   ids: string[];
 }
 
-function runChildThenKill(n: number): Promise<ChildResult> {
+function runChildThenKill(n: number, mode: "flush" | "noflush"): Promise<ChildResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ["--import", "tsx", childPath, spoolPath, String(n)], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
+    const child = spawn(
+      process.execPath,
+      ["--import", "tsx", childPath, spoolPath, String(n), mode],
+      { stdio: ["ignore", "pipe", "pipe"] },
+    );
     let out = "";
     let err = "";
     let killed = false;
@@ -52,14 +54,28 @@ function runChildThenKill(n: number): Promise<ChildResult> {
   });
 }
 
-describe("kill -9 during flush loses zero spooled records", () => {
-  it("recovers every record from the spool after a hard kill", async () => {
+describe("kill -9 loses zero spooled records", () => {
+  it("recovers every record after a hard kill mid-flush", async () => {
     const N = 200;
-    const { ids } = await runChildThenKill(N);
+    const { ids } = await runChildThenKill(N, "flush");
     expect(ids.length).toBe(N);
     expect(ids.every((id) => typeof id === "string" && id.length === 26)).toBe(true);
 
     // Reopen the spool in this process: nothing was acked, so all N replay.
+    const spool = new Spool(spoolPath);
+    const recovered = spool.pending();
+    expect(recovered.length).toBe(N);
+    expect(recovered.map((r) => r.dar.decisionId)).toEqual(ids);
+    spool.close();
+  }, 30_000);
+
+  it("recovers records that were only writeSync-appended (no fsync) before the kill", async () => {
+    // This isolates the design's core claim: a plain writeSync (no fsync) still
+    // survives process death, because the bytes are already in the kernel.
+    const N = 200;
+    const { ids } = await runChildThenKill(N, "noflush");
+    expect(ids.length).toBe(N);
+
     const spool = new Spool(spoolPath);
     const recovered = spool.pending();
     expect(recovered.length).toBe(N);
