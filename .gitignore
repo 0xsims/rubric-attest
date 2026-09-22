@@ -1,0 +1,36 @@
+# --- build / deps ---
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.vitest/
+
+# --- logs / os ---
+*.log
+npm-debug.log*
+.DS_Store
+
+# --- runtime data (spool / index shards land here in P1/P2) ---
+*.spool
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# --- home-directory artifacts (repo root == $HOME in this environment) ---
+.bash_history
+.bash_logout
+.bashrc
+.profile
+.cache/
+.config/
+.local/
+.npm/
+.npm-global/
+.npmrc
+.claude/
+.claude.json
+/node
+/npm
+/npx
+u.txt

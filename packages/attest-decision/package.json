@@ -1,0 +1,15 @@
+{
+  "name": "@rubric/attest-decision",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Rubric core SDK: DAR/0.1 builder, JCS+SHA3-256, fire-and-forget attest()",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}
