@@ -1,0 +1,32 @@
+name: Guard main
+
+# Detection-only enforcement of the "never push main" invariant (CLAUDE.md).
+# Branch protection isn't available on this plan, so instead: on every push to
+# main, verify the pushed commit is the merge commit of a pull request. A direct
+# push (no associated PR) fails this check — visible as a red X on the commit.
+# It cannot *block* the push, only flag it after the fact.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  no-direct-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify HEAD came from a merged PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          count=$(gh api "repos/${REPO}/commits/${SHA}/pulls" --jq 'length')
+          if [ "${count}" -eq 0 ]; then
+            echo "::error::Direct push to main detected (${SHA}). Changes to main must go through a pull request."
+            exit 1
+          fi
+          echo "OK: ${SHA} is associated with a pull request (count=${count})."
