@@ -1,5 +1,7 @@
 # Rubric Decision Attestation
 
+[![CI](https://github.com/0xsims/rubric-attest/actions/workflows/ci.yml/badge.svg)](https://github.com/0xsims/rubric-attest/actions/workflows/ci.yml)
+
 Monorepo for the Rubric Decision Attestation system. See [`CLAUDE.md`](./CLAUDE.md)
 for the build constitution (invariants) and [`tasks/`](./tasks) for the phased
 plan.
