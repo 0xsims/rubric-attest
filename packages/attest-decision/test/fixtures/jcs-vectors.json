@@ -1,0 +1,35 @@
+{
+  "comment": "JCS (RFC 8785) cross-vectors: input value -> exact canonical string. Control-character escaping is exercised in jcs.test.ts directly (JSON cannot carry literal control chars).",
+  "vectors": [
+    {
+      "name": "object keys sort by UTF-16 code unit (numeric-looking keys are strings)",
+      "in": { "2": 4, "10": 3, "b": 1, "a": 2 },
+      "out": "{\"10\":3,\"2\":4,\"a\":2,\"b\":1}"
+    },
+    {
+      "name": "unicode key sort: Z < a < é < ü by code unit",
+      "in": { "ü": 1, "a": 2, "Z": 3, "é": 4 },
+      "out": "{\"Z\":3,\"a\":2,\"é\":4,\"ü\":1}"
+    },
+    {
+      "name": "recursive sort, arrays keep order",
+      "in": { "z": [3, 2, 1], "a": { "d": 4, "c": 3 }, "m": null },
+      "out": "{\"a\":{\"c\":3,\"d\":4},\"m\":null,\"z\":[3,2,1]}"
+    },
+    {
+      "name": "number serialization (ES Number::toString == RFC 8785 §3.2.2.3)",
+      "in": { "a": 0, "b": -0, "c": 1, "d": 1e30, "e": 0.000001, "f": 1e-7, "g": 1e21, "h": 100000000000000000000, "i": -5, "j": 3.5 },
+      "out": "{\"a\":0,\"b\":0,\"c\":1,\"d\":1e+30,\"e\":0.000001,\"f\":1e-7,\"g\":1e+21,\"h\":100000000000000000000,\"i\":-5,\"j\":3.5}"
+    },
+    {
+      "name": "empty containers",
+      "in": { "arr": [], "obj": {} },
+      "out": "{\"arr\":[],\"obj\":{}}"
+    },
+    {
+      "name": "top-level array of scalars",
+      "in": [true, false, null, 1],
+      "out": "[true,false,null,1]"
+    }
+  ]
+}

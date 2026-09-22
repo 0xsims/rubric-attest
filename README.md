@@ -25,6 +25,28 @@ plan.
 - `attest()` never blocks the caller and never throws into app code; failures
   spool.
 
+## SDK usage (`@rubric/attest-decision`)
+
+```ts
+import { Attestor, HttpTransport } from "@rubric/attest-decision";
+
+const attestor = new Attestor({
+  transport: new HttpTransport({ baseUrl: "https://attest.example" }), // reads RUBRIC_API_KEY
+  spoolPath: "/var/lib/rubric/attest.spool",
+});
+
+// Fire-and-forget: returns immediately (<1 ms), never throws into app code.
+attestor.attest({
+  agentId: "agent://jev/pricing-v3",
+  schema: pricingSchema, // hashed to schemaHash
+  decision: { action: "approve", limitUsd: "2500.00" },
+});
+```
+
+Records are appended to a durable spool and flushed in batches (64 records or
+5000 ms) with one POST per flush to `/v1/tiered-attest`. A `kill -9` at any point
+loses zero spooled records — the next process drains the spool on startup.
+
 ## Development
 
 Requires Node.js >= 20.

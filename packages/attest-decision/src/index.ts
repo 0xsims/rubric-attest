@@ -1,38 +1,36 @@
 /**
- * @rubric/attest-decision — core SDK.
+ * @rubric/attest-decision — core SDK (DAR/0.1).
  *
- * P0 scaffolding: exports the frozen DAR/0.1 constants and types from
- * spec/dar-0.1.md so downstream packages have a stable home. The canonicalizer,
- * hasher, DAR builder, batcher, and spool land in P1 (see tasks/P1.md).
+ * Public surface: fire-and-forget attestation (`Attestor`), the DAR builder,
+ * JCS canonicalization, SHA3-256 hashing, ULID minting, the durable spool, and
+ * transports. See spec/dar-0.1.md and tasks/P1.md.
  */
 
-/** Record format tag for the frozen DAR/0.1 field set. */
-export const DAR_VERSION = "DAR/0.1" as const;
+export {
+  DAR_VERSION,
+  HASH_ALGORITHM,
+  HASH_PREFIX,
+  TIERED_ATTEST_PATH,
+  API_KEY_ENV,
+  type LeafType,
+  type HashString,
+  type DarCore,
+} from "./constants.js";
 
-/** Hash algorithm invariant (spec/dar-0.1.md §4.1). SHA3-256 everywhere. */
-export const HASH_ALGORITHM = "sha3-256" as const;
-
-/** Prefix on hash-valued fields (spec/dar-0.1.md §4.2). */
-export const HASH_PREFIX = `${HASH_ALGORITHM}:` as const;
-
-/** Leaf discriminant values (spec/dar-0.1.md §2, `leafType`). */
-export type LeafType = "decision" | "schema-change" | "checkpoint";
-
-/** A `sha3-256:<hex>` encoded hash string. */
-export type HashString = `${typeof HASH_ALGORITHM}:${string}`;
-
-/**
- * The DAR core: the frozen, hashable field set (spec/dar-0.1.md §2).
- * The Merkle leaf hash is computed over the JCS canonicalization of this object.
- */
-export interface DarCore {
-  readonly v: typeof DAR_VERSION;
-  readonly decisionId: string;
-  readonly agentId: string;
-  readonly ts: string;
-  readonly prev: string | null;
-  readonly leafType: LeafType;
-  readonly schemaHash: HashString;
-  readonly decisionHash: HashString;
-  readonly decision: Record<string, unknown>;
-}
+export { canonicalize, canonicalizeToBytes, JcsError } from "./jcs.js";
+export { sha3_256, sha3_256Hex, hashJson } from "./hash.js";
+export { ulid, monotonicUlidFactory } from "./ulid.js";
+export {
+  DarBuilder,
+  leafHash,
+  canonicalDar,
+  type DarBuildInput,
+  type DarBuilderDeps,
+} from "./dar.js";
+export { Spool, DEFAULT_MAX_BYTES, type SpoolRecord, type SpoolOptions } from "./spool.js";
+export {
+  HttpTransport,
+  type Transport,
+  type HttpTransportOptions,
+} from "./transport.js";
+export { Attestor, type AttestorOptions } from "./attestor.js";
