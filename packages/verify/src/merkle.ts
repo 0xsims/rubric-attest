@@ -4,7 +4,7 @@
  * leaf hashes; interior nodes are domain-separated to prevent second-preimage
  * ambiguity between leaves and internal nodes.
  */
-import { sha3_256, type HashString } from "@rubric/attest-decision";
+import { sha3_256, type HashString } from "@0xsims/attest-decision";
 import type { MerkleProofStep } from "./ports.js";
 
 const NODE_DOMAIN = "rubric-merkle-node/1\n";

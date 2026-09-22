@@ -1,5 +1,5 @@
 /**
- * @rubric/attest-decision — core SDK (DAR/0.1).
+ * @0xsims/attest-decision — core SDK (DAR/0.1).
  *
  * Public surface: fire-and-forget attestation (`Attestor`), the DAR builder,
  * JCS canonicalization, SHA3-256 hashing, ULID minting, the durable spool, and

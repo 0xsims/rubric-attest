@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import type { DarCore } from "@rubric/attest-decision";
+import type { DarCore } from "@0xsims/attest-decision";
 import {
   createDecisionVerifyRoute,
   toNodeListener,

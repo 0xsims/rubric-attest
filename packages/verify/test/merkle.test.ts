@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sha3_256, type HashString } from "@rubric/attest-decision";
+import { sha3_256, type HashString } from "@0xsims/attest-decision";
 import { buildMerkleTree, verifyMerkleProof } from "../src/index.js";
 
 const leaf = (s: string): HashString => sha3_256(s);

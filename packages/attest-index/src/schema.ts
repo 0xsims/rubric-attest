@@ -4,7 +4,7 @@
  * back to the bundle it was derived from (so the index is a cache, and the
  * bundle store remains the source of truth — the index is rebuildable).
  */
-import type { DarCore } from "@rubric/attest-decision";
+import type { DarCore } from "@0xsims/attest-decision";
 
 export interface IndexRow {
   attestationId: string;

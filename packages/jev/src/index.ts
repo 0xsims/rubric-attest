@@ -1,8 +1,8 @@
 /**
- * @rubric/jev — Jev decision-shape adapter (tasks/P3.md).
+ * @0xsims/jev — Jev decision-shape adapter (tasks/P3.md).
  *
  * All knowledge of Jev's documented decision shape is confined to ./mapping.ts;
- * `toDecision()` there produces DAR builder inputs for @rubric/attest-decision.
+ * `toDecision()` there produces DAR builder inputs for @0xsims/attest-decision.
  */
 export { toDecision, type JevDecision } from "./mapping.js";
 export { StubJevClient, type StubJevOptions } from "./client.js";

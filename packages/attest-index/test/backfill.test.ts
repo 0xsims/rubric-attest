@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { HashString } from "@rubric/attest-decision";
+import type { HashString } from "@0xsims/attest-decision";
 import { backfill, Index, type AttestationBundle } from "../src/index.js";
 
 function bundle(

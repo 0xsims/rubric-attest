@@ -1,5 +1,5 @@
 /**
- * @rubric/verify — the x402-gated decision-verify route (tasks/P4.md).
+ * @0xsims/verify — the x402-gated decision-verify route (tasks/P4.md).
  *
  * A framework-agnostic Handler that, once payment is present, verifies a DAR
  * against its Merkle inclusion proof, HCS anchor ref, and service signature
