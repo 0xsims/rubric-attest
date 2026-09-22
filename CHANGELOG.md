@@ -10,6 +10,13 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- Tag-triggered npm release workflow (`.github/workflows/release.yml`): on a
+  `v*` tag it verifies the tag matches the package version, runs lint + typecheck
+  + test + build, and publishes `@0xsims/*` with npm provenance, using an
+  `NPM_TOKEN` repository secret.
+
 ## [1.0.0] - 2026-09-22
 
 First stable release, published under the `@0xsims/*` scope. Each package builds
