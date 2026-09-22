@@ -10,6 +10,7 @@ plan.
 |------|------|
 | [`spec/dar-0.1.md`](./spec/dar-0.1.md) | DAR/0.1 record format: field table, JCS + SHA3-256 rules, versioning rules. **Frozen.** |
 | `packages/attest-decision` | Core SDK — DAR builder, JCS canonicalization, SHA3-256, fire-and-forget `attest()`, batcher, durable spool (P1). |
+| `packages/attest-index` | Attestation index — SQLite day-shard writer (WAL), backfill, and query lib (`byDecisionId`, `byAgentRange`, `byAgentSchema`, `chainHead`) (P2). |
 | `packages/jev` | Adapter — Jev decision shape → DAR inputs; all Jev knowledge confined here (P3). |
 | `packages/schema` | Adapter — JSON Schema / Zod → DAR inputs (P3). |
 | `tasks/` | Phase definitions `P0`–`P5`. |
