@@ -16,10 +16,11 @@ describe("assembleVerification", () => {
     expect(r.decisionId).toBe(fx.bundles[0]!.dar.decisionId);
   });
 
-  it("flags drift when the decision payload is tampered", () => {
+  it("flags drift when a content commitment is tampered (decisionHash no longer matches)", () => {
     const fx = buildFixture(makeDars("agent://a", [{ x: 1 }]));
     const b = fx.bundles[0]!;
-    const tampered = { ...b, dar: { ...b.dar, decision: { x: 999 } } };
+    // Swap inputHash without recomputing decisionHash -> the tri-hash breaks.
+    const tampered = { ...b, dar: { ...b.dar, inputHash: sha3_256("tampered-input") } };
     const r = assembleVerification(tampered, validSignature);
     expect(r.drift).toBe(true);
     expect(r.consistencyVerified).toBe(false);

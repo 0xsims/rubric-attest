@@ -28,7 +28,7 @@ const attestor = new Attestor({
 
 const ids: (string | null)[] = [];
 for (let i = 0; i < n; i++) {
-  ids.push(attestor.attest({ agentId: "A", schema: { type: "object" }, decision: { i } }));
+  ids.push(attestor.attest({ agentId: "A", schema: { type: "object" }, input: { i }, output: { ok: true } }));
 }
 
 if (mode === "flush") {

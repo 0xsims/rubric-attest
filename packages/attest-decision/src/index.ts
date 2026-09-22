@@ -15,6 +15,9 @@ export {
   type LeafType,
   type HashString,
   type DarCore,
+  type AdapterInfo,
+  type TransmitMode,
+  type PayloadRecord,
 } from "./constants.js";
 
 export { canonicalize, canonicalizeToBytes, JcsError } from "./jcs.js";
@@ -24,8 +27,11 @@ export {
   DarBuilder,
   leafHash,
   canonicalDar,
+  decisionHashOf,
+  toPayload,
   type DarBuildInput,
   type DarBuilderDeps,
+  type DarMeta,
 } from "./dar.js";
 export { Spool, DEFAULT_MAX_BYTES, type SpoolRecord, type SpoolOptions } from "./spool.js";
 export {

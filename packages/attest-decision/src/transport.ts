@@ -2,11 +2,15 @@
  * Batch transport. One POST per flush to /v1/tiered-attest (tasks/P1.md).
  * The SDK reads exactly one credential env var: RUBRIC_API_KEY (CLAUDE.md).
  */
-import { API_KEY_ENV, TIERED_ATTEST_PATH, type DarCore } from "./constants.js";
+import { API_KEY_ENV, TIERED_ATTEST_PATH, type DarCore, type PayloadRecord } from "./constants.js";
 
 export interface Transport {
-  /** Deliver one batch. Must reject on failure so the spool retains the batch. */
-  send(records: DarCore[]): Promise<void>;
+  /**
+   * Deliver one batch. `records` are hashes-only DAR cores; `payloads` (raw
+   * content) is present only in `payload` mode and rides in the envelope, never
+   * in a core. Must reject on failure so the spool retains the batch.
+   */
+  send(records: DarCore[], payloads?: PayloadRecord[]): Promise<void>;
 }
 
 export interface HttpTransportOptions {
@@ -45,10 +49,11 @@ export class HttpTransport implements Transport {
     this.timeoutMs = options.timeoutMs ?? 30_000;
   }
 
-  async send(records: DarCore[]): Promise<void> {
+  async send(records: DarCore[], payloads?: PayloadRecord[]): Promise<void> {
     const key = this.apiKey();
     if (!key) throw new Error(`${API_KEY_ENV} is not set`);
 
+    const body = payloads && payloads.length > 0 ? { records, payloads } : { records };
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
@@ -58,7 +63,7 @@ export class HttpTransport implements Transport {
           "content-type": "application/json",
           authorization: `Bearer ${key}`,
         },
-        body: JSON.stringify({ records }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       });
       if (!res.ok) {

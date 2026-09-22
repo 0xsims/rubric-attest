@@ -11,8 +11,8 @@
  * queue and retried, so it is never lost. On construction the spool is drained:
  * anything left by a previous run is re-queued and per-agent chain heads reseeded.
  */
-import type { DarCore } from "./constants.js";
-import { DarBuilder, type DarBuildInput } from "./dar.js";
+import type { DarCore, PayloadRecord, TransmitMode } from "./constants.js";
+import { DarBuilder, toPayload, type DarBuildInput } from "./dar.js";
 import { Spool } from "./spool.js";
 import type { Transport } from "./transport.js";
 
@@ -29,6 +29,8 @@ export interface AttestorOptions {
   maxQueue?: number;
   /** Reject a decision whose canonical form exceeds this many bytes. Default 256 KiB. */
   maxDecisionBytes?: number;
+  /** `hash-only` (default) sends DAR cores only; `payload` also carries raw content in the envelope. */
+  mode?: TransmitMode;
   now?: () => number;
   newDecisionId?: () => string;
   onError?: (err: unknown) => void;
@@ -39,6 +41,7 @@ export interface AttestorOptions {
 interface QueueItem {
   seq: number;
   dar: DarCore;
+  payload?: PayloadRecord;
 }
 
 const sleep0 = (): Promise<void> => new Promise((r) => setImmediate(r));
@@ -53,6 +56,7 @@ export class Attestor {
   private readonly retryMs: number;
   private readonly closeRetries: number;
   private readonly maxQueue: number;
+  private readonly mode: TransmitMode;
   private readonly onError?: (err: unknown) => void;
 
   private queue: QueueItem[] = [];
@@ -77,6 +81,7 @@ export class Attestor {
     this.retryMs = options.retryMs ?? 1000;
     this.closeRetries = options.closeRetries ?? 3;
     this.maxQueue = options.maxQueue ?? 100_000;
+    this.mode = options.mode ?? "hash-only";
 
     if (options.autoRecover !== false) this.recover();
   }
@@ -89,8 +94,9 @@ export class Attestor {
     if (this.closed) return null;
     try {
       const dar = this.builder.build(input);
-      const seq = this.spool.append(dar);
-      this.queue.push({ seq, dar });
+      const payload = this.mode === "payload" ? toPayload(dar.decisionId, input) : undefined;
+      const seq = this.spool.append(dar, payload);
+      this.queue.push({ seq, dar, payload });
       // Bound in-memory growth under sustained transport failure: drop oldest
       // queued records past the cap (they are surfaced, not silently lost).
       while (this.queue.length > this.maxQueue) {
@@ -116,7 +122,7 @@ export class Attestor {
     try {
       this.spool.compactIfNeeded(); // enforce the 50 MB cap off the caller path
       this.spool.fsync();
-      await this.transport.send(batch.map((b) => b.dar));
+      await this.transport.send(batch.map((b) => b.dar), this.payloadsOf(batch));
       this.spool.ack(batch[batch.length - 1]!.seq);
       this.flushing = false;
       this.scheduleNext();
@@ -159,7 +165,7 @@ export class Attestor {
       for (let attempt = 0; attempt <= this.closeRetries; attempt++) {
         try {
           this.spool.fsync();
-          await this.transport.send(batch.map((b) => b.dar));
+          await this.transport.send(batch.map((b) => b.dar), this.payloadsOf(batch));
           this.spool.ack(batch[batch.length - 1]!.seq);
           delivered = true;
           break;
@@ -178,6 +184,15 @@ export class Attestor {
   }
 
   // --- internals ---
+
+  /** Raw payloads for a batch — only in `payload` mode; ride in the envelope. */
+  private payloadsOf(batch: QueueItem[]): PayloadRecord[] | undefined {
+    if (this.mode !== "payload") return undefined;
+    const payloads = batch
+      .map((b) => b.payload)
+      .filter((p): p is PayloadRecord => p !== undefined);
+    return payloads.length > 0 ? payloads : undefined;
+  }
 
   private recover(): void {
     const pending = this.spool.pending();

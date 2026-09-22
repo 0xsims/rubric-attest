@@ -1,14 +1,15 @@
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { hashJson, leafHash, type DarCore } from "@0xsims/attest-decision";
+import { decisionHashOf, hashJson, leafHash, type DarCore } from "@0xsims/attest-decision";
 import { backfill } from "@0xsims/attest-index";
 import { buildMerkleTree, type VerifiableBundle } from "@0xsims/verify";
 
 export interface DarSpec {
   decisionId: string;
   prev: string | null;
-  decision: Record<string, unknown>;
+  input: unknown;
+  output: unknown;
   ts: string;
   agentId: string;
   schema?: Record<string, unknown>;
@@ -17,6 +18,9 @@ export interface DarSpec {
 /** Construct a DAR core directly (lets tests choose prev for fork/gap cases). */
 export function makeDar(spec: DarSpec): DarCore {
   const schema = spec.schema ?? { type: "object" };
+  const schemaHash = hashJson(schema);
+  const inputHash = hashJson(spec.input);
+  const outputHash = hashJson(spec.output);
   return {
     v: "DAR/0.1",
     decisionId: spec.decisionId,
@@ -24,9 +28,10 @@ export function makeDar(spec: DarSpec): DarCore {
     ts: spec.ts,
     prev: spec.prev,
     leafType: "decision",
-    schemaHash: hashJson(schema),
-    decisionHash: hashJson(spec.decision),
-    decision: spec.decision,
+    schemaHash,
+    inputHash,
+    outputHash,
+    decisionHash: decisionHashOf(schemaHash, inputHash, outputHash),
   };
 }
 
@@ -83,9 +88,9 @@ export function goldenDars(): DarCore[] {
   const s1 = { $id: "pricing/v1", type: "object" };
   const s2 = { $id: "pricing/v2", type: "object" };
   return [
-    makeDar({ decisionId: ID(1), prev: null, decision: { action: "approve", n: 1 }, ts: TS(1), agentId, schema: s1 }),
-    makeDar({ decisionId: ID(2), prev: ID(1), decision: { action: "approve", n: 2 }, ts: TS(2), agentId, schema: s1 }),
-    makeDar({ decisionId: ID(3), prev: ID(2), decision: { action: "deny", n: 3 }, ts: TS(3), agentId, schema: s2 }),
+    makeDar({ decisionId: ID(1), prev: null, input: { n: 1 }, output: { action: "approve" }, ts: TS(1), agentId, schema: s1 }),
+    makeDar({ decisionId: ID(2), prev: ID(1), input: { n: 2 }, output: { action: "approve" }, ts: TS(2), agentId, schema: s1 }),
+    makeDar({ decisionId: ID(3), prev: ID(2), input: { n: 3 }, output: { action: "deny" }, ts: TS(3), agentId, schema: s2 }),
   ];
 }
 

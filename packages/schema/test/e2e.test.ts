@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
-import { Attestor, hashJson, type DarCore, type Transport } from "@0xsims/attest-decision";
+import { Attestor, decisionHashOf, hashJson, type DarCore, type Transport } from "@0xsims/attest-decision";
 import { toDecision, toDecisionFromZod, zodToSchema } from "../src/index.js";
 
 class MockTransport implements Transport {
@@ -32,17 +32,21 @@ describe("schema adapter end-to-end through the P1 batcher", () => {
     const a = new Attestor({ transport: t, spoolPath, maxWaitMs: 60_000 });
 
     const Pricing = z.object({ action: z.enum(["approve", "deny"]), limitUsd: z.string() });
-    const decision = { action: "approve", limitUsd: "250.00" };
-    const input = toDecisionFromZod({ agentId: "agent://schema/x", decision, zod: Pricing, name: "Pricing" });
-    const id = a.attest(input);
+    const req = { requestId: "r-1" };
+    const out = { action: "approve", limitUsd: "250.00" };
+    const built = toDecisionFromZod({ agentId: "agent://schema/x", input: req, output: out, zod: Pricing, name: "Pricing" });
+    const id = a.attest(built);
     await a.drain();
 
     const [r] = t.sent;
     expect(r!.v).toBe("DAR/0.1");
     expect(r!.decisionId).toBe(id);
     expect(r!.agentId).toBe("agent://schema/x");
-    expect(r!.decisionHash).toBe(hashJson(decision));
+    expect(r!.inputHash).toBe(hashJson(req));
+    expect(r!.outputHash).toBe(hashJson(out));
+    expect(r!.decisionHash).toBe(decisionHashOf(r!.schemaHash, r!.inputHash, r!.outputHash));
     expect(r!.schemaHash).toBe(hashJson(zodToSchema(Pricing, "Pricing")));
+    expect(r!.adapter).toEqual({ name: "schema", version: "1.0.0" });
     await a.close();
   });
 
@@ -56,15 +60,16 @@ describe("schema adapter end-to-end through the P1 batcher", () => {
       properties: { action: { type: "string" } },
       required: ["action"],
     };
-    const decision = { action: "deny" };
-    const input = toDecision({ agentId: "agent://schema/raw", decision, schema });
-    const id = a.attest(input);
+    const req = { q: "x" };
+    const out = { action: "deny" };
+    const built = toDecision({ agentId: "agent://schema/raw", input: req, output: out, schema });
+    const id = a.attest(built);
     await a.drain();
 
     const [r] = t.sent;
     expect(r!.decisionId).toBe(id);
     expect(r!.schemaHash).toBe(hashJson(schema));
-    expect(r!.decision.action).toBe("deny");
+    expect(r!.outputHash).toBe(hashJson(out));
     await a.close();
   });
 });

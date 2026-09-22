@@ -2,22 +2,27 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Attestor, type DarCore, type Transport } from "../src/index.js";
+import { Attestor, type DarCore, type PayloadRecord, type Transport } from "../src/index.js";
 
 class MockTransport implements Transport {
   batches: DarCore[][] = [];
+  payloadBatches: (PayloadRecord[] | undefined)[] = [];
   failuresLeft = 0;
   hang = false;
-  async send(records: DarCore[]): Promise<void> {
+  async send(records: DarCore[], payloads?: PayloadRecord[]): Promise<void> {
     if (this.hang) return new Promise<void>(() => {}); // never resolves
     if (this.failuresLeft > 0) {
       this.failuresLeft--;
       throw new Error("transport down");
     }
     this.batches.push(records.slice());
+    this.payloadBatches.push(payloads);
   }
   get sent(): DarCore[] {
     return this.batches.flat();
+  }
+  get sentPayloads(): PayloadRecord[] {
+    return this.payloadBatches.flatMap((p) => p ?? []);
   }
 }
 
@@ -39,7 +44,47 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-const input = (n: number) => ({ agentId: "A", schema: { type: "object" }, decision: { n } });
+const input = (n: number) => ({ agentId: "A", schema: { type: "object" }, input: { n }, output: { ok: true } });
+
+describe("transmit mode (hash-only default vs payload)", () => {
+  it("defaults to hash-only: no payloads in the envelope; the core carries only hashes", async () => {
+    const t = new MockTransport();
+    const a = new Attestor({ transport: t, spoolPath });
+    a.attest(input(1));
+    await a.drain();
+    expect(t.sentPayloads).toEqual([]); // no raw content transmitted
+    expect(t.payloadBatches[0]).toBeUndefined();
+    const dar = t.sent[0]!;
+    expect("input" in dar).toBe(false);
+    expect("output" in dar).toBe(false);
+    expect(dar.inputHash).toMatch(/^sha3-256:/);
+    await a.close();
+  });
+
+  it("payload mode carries raw content in the envelope — still never in the core", async () => {
+    const t = new MockTransport();
+    const a = new Attestor({ transport: t, spoolPath, mode: "payload" });
+    const id = a.attest({
+      agentId: "A",
+      schema: { s: 1 },
+      input: { req: 1 },
+      output: { ok: true },
+      meta: { schemaRef: "urn:s" },
+    });
+    await a.drain();
+    expect(t.sentPayloads.length).toBe(1);
+    const p = t.sentPayloads[0]!;
+    expect(p.decisionId).toBe(id);
+    expect(p.input).toEqual({ req: 1 });
+    expect(p.output).toEqual({ ok: true });
+    expect(p.schema).toEqual({ s: 1 });
+    const dar = t.sent[0]!;
+    expect("input" in dar).toBe(false);
+    expect("output" in dar).toBe(false);
+    expect(dar.schemaRef).toBe("urn:s");
+    await a.close();
+  });
+});
 
 describe("attest() — fire and forget, never throws", () => {
   it("returns a decisionId and never throws on bad input", async () => {
@@ -100,10 +145,10 @@ describe("durability — retry and recovery", () => {
     const t = new MockTransport();
     t.failuresLeft = 1;
     const a = new Attestor({ transport: t, spoolPath, retryMs: 10 });
-    a.attest(input(1));
-    a.attest(input(2));
+    const id1 = a.attest(input(1));
+    const id2 = a.attest(input(2));
     await a.drain(); // first attempt throws, drain retries and succeeds
-    expect(t.sent.map((d) => d.decision.n)).toEqual([1, 2]);
+    expect(t.sent.map((d) => d.decisionId)).toEqual([id1, id2]);
     expect(a.pendingCount()).toBe(0);
     await a.close();
   });
@@ -112,9 +157,9 @@ describe("durability — retry and recovery", () => {
     const t = new MockTransport();
     t.failuresLeft = 2; // first two send attempts throw, third succeeds
     const a = new Attestor({ transport: t, spoolPath, retryMs: 5, closeRetries: 3 });
-    a.attest(input(1));
+    const id = a.attest(input(1));
     await a.close();
-    expect(t.sent.map((d) => d.decision.n)).toEqual([1]);
+    expect(t.sent.map((d) => d.decisionId)).toEqual([id]);
   });
 
   it("close() leaves records durably spooled when all retries fail; a later run delivers them", async () => {

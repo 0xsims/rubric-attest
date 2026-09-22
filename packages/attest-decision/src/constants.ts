@@ -23,18 +23,42 @@ export type LeafType = "decision" | "schema-change" | "checkpoint";
 /** A `sha3-256:<hex>` encoded hash string. */
 export type HashString = `${typeof HASH_ALGORITHM}:${string}`;
 
+/** Identifies the adapter that produced a decision's inputs (spec §2). */
+export interface AdapterInfo {
+  readonly name: string;
+  readonly version: string;
+}
+
+/** Transmit mode: `hash-only` (default) sends DAR cores; `payload` also carries raw content in the envelope. */
+export type TransmitMode = "hash-only" | "payload";
+
+/** Raw content transmitted ONLY in `payload` mode, in the transport envelope — never in the DAR core. */
+export interface PayloadRecord {
+  decisionId: string;
+  schema?: unknown;
+  input: unknown;
+  output: unknown;
+  meta?: unknown;
+}
+
 /**
- * The DAR core: the frozen, hashable field set (spec §2). The Merkle leaf hash
- * is computed over the JCS canonicalization of this object.
+ * The DAR core: the frozen, HASHES-ONLY field set (spec §2). It never carries
+ * raw content — only commitments. The Merkle leaf hash is computed over the JCS
+ * canonicalization of this object.
  */
 export interface DarCore {
   readonly v: typeof DAR_VERSION;
   readonly decisionId: string;
   readonly agentId: string;
+  /** Client-claimed decision time; trusted time is the HCS consensus timestamp. */
   readonly ts: string;
   readonly prev: string | null;
   readonly leafType: LeafType;
   readonly schemaHash: HashString;
+  readonly inputHash: HashString;
+  readonly outputHash: HashString;
+  /** SHA3-256 over JCS of { schemaHash, inputHash, outputHash }. */
   readonly decisionHash: HashString;
-  readonly decision: Record<string, unknown>;
+  readonly schemaRef?: string;
+  readonly adapter?: AdapterInfo;
 }

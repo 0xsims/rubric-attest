@@ -25,9 +25,9 @@ function exportAll(f: StoreFixture) {
 describe("continuity report in the evidence bundle", () => {
   it("renders a fork as a branch — never tampering", () => {
     fx = buildStoreFixture([
-      makeDar({ decisionId: ID(1), prev: null, decision: { n: 1 }, ts: TS(1), agentId: AGENT }),
-      makeDar({ decisionId: ID(2), prev: ID(1), decision: { n: 2 }, ts: TS(2), agentId: AGENT }),
-      makeDar({ decisionId: ID(3), prev: ID(1), decision: { n: 3 }, ts: TS(3), agentId: AGENT }), // fork off D1
+      makeDar({ decisionId: ID(1), prev: null, input: { n: 1 }, output: { ok: true }, ts: TS(1), agentId: AGENT }),
+      makeDar({ decisionId: ID(2), prev: ID(1), input: { n: 2 }, output: { ok: true }, ts: TS(2), agentId: AGENT }),
+      makeDar({ decisionId: ID(3), prev: ID(1), input: { n: 3 }, output: { ok: true }, ts: TS(3), agentId: AGENT }), // fork off D1
     ]);
     const { bundle } = exportAll(fx);
     expect(bundle.decisionCount).toBe(3);
@@ -40,8 +40,8 @@ describe("continuity report in the evidence bundle", () => {
   it("renders a gap when a decision's prev is absent from the export", () => {
     fx = buildStoreFixture([
       // D1 is never stored/indexed; D2 references it -> gap.
-      makeDar({ decisionId: ID(2), prev: ID(1), decision: { n: 2 }, ts: TS(2), agentId: AGENT }),
-      makeDar({ decisionId: ID(3), prev: ID(2), decision: { n: 3 }, ts: TS(3), agentId: AGENT }),
+      makeDar({ decisionId: ID(2), prev: ID(1), input: { n: 2 }, output: { ok: true }, ts: TS(2), agentId: AGENT }),
+      makeDar({ decisionId: ID(3), prev: ID(2), input: { n: 3 }, output: { ok: true }, ts: TS(3), agentId: AGENT }),
     ]);
     const { bundle } = exportAll(fx);
     expect(bundle.continuity.gaps).toEqual([{ decisionId: ID(2), missingPrev: ID(1) }]);
