@@ -10,6 +10,17 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed (breaking, pre-release — DAR/0.1 preimage)
+
+- **Hashes-only DAR core.** Removed `decision` from the core; added required
+  `inputHash` and `outputHash`; `decisionHash` is now `SHA3-256(JCS({ schemaHash,
+  inputHash, outputHash }))`. Added optional core fields `schemaRef` and
+  `adapter`. Adapters' `toDecision()` now returns `{ schema, input, output, meta }`.
+  Raw content is transmitted only in `mode: "payload"` (transport envelope) —
+  default is hash-only, and the core never carries content. `ts` is documented
+  as client-claimed (trusted time is the HCS consensus timestamp). Tag stays
+  `DAR/0.1` because nothing was published under the old preimage.
+
 ### Added
 
 - Tag-triggered npm release workflow (`.github/workflows/release.yml`): on a

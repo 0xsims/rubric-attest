@@ -39,13 +39,16 @@ import { Attestor, HttpTransport } from "@0xsims/attest-decision";
 const attestor = new Attestor({
   transport: new HttpTransport({ baseUrl: "https://attest.example" }), // reads RUBRIC_API_KEY
   spoolPath: "/var/lib/rubric/attest.spool",
+  // mode: "payload",  // optional — also ship raw content in the transport envelope; default is "hash-only"
 });
 
 // Fire-and-forget: returns immediately (<1 ms), never throws into app code.
+// The DAR core is hashes-only: schema/input/output are hashed, never carried raw.
 attestor.attest({
   agentId: "agent://jev/pricing-v3",
-  schema: pricingSchema, // hashed to schemaHash
-  decision: { action: "approve", limitUsd: "2500.00" },
+  schema: pricingSchema,                                // hashed to schemaHash
+  input: { requestId: "req-1" },                        // hashed to inputHash
+  output: { action: "approve", limitUsd: "2500.00" },   // hashed to outputHash
 });
 ```
 
@@ -56,6 +59,10 @@ next process drains the spool on startup.
 
 ### Guarantees and limits
 
+- **Hashes-only core.** The DAR core never carries raw content — only
+  `schemaHash`/`inputHash`/`outputHash` and a `decisionHash` over the three.
+  Raw content is transmitted only in `mode: "payload"`, in the transport
+  envelope, never in a core; the default is hash-only.
 - **`attest()` latency** is sub-millisecond for typical payloads; decisions
   larger than `maxDecisionBytes` (default 256 KiB) are rejected rather than
   block the caller.

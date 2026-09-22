@@ -1,12 +1,29 @@
 {
-  "comment": "Golden DAR/0.1 records. Deterministic inputs: fixed clock (1758499800000) and scripted decisionIds. Regenerating requires a deliberate spec/format change. See dar.test.ts.",
+  "comment": "Golden DAR/0.1 (hashes-only core). Deterministic: fixed clock 1758499800000 + scripted decisionIds. Regenerating requires a deliberate spec/format change.",
   "clockMs": 1758499800000,
-  "schema": { "$id": "urn:jev:pricing:v3", "type": "object", "version": 3 },
+  "schema": {
+    "$id": "urn:jev:pricing:v3",
+    "type": "object",
+    "version": 3
+  },
+  "meta": {
+    "schemaRef": "urn:jev:pricing:v3",
+    "adapter": {
+      "name": "jev",
+      "version": "1.0.0"
+    }
+  },
   "sequence": [
     {
       "agentId": "agent://jev/pricing-v3",
       "decisionId": "01J8Z9Q0000000000000000001",
-      "decision": { "action": "approve", "limitUsd": "2500.00", "reasonCode": "AUTO_OK" },
+      "input": {
+        "requestId": "req-1"
+      },
+      "output": {
+        "action": "approve",
+        "limitUsd": "2500.00"
+      },
       "expect": {
         "dar": {
           "v": "DAR/0.1",
@@ -16,17 +33,29 @@
           "prev": null,
           "leafType": "decision",
           "schemaHash": "sha3-256:4b65cd1582a4328877fdb57f45dd4d4591b9271651ba7e22bdaad50ddc746d9d",
-          "decisionHash": "sha3-256:62e0ccf8c0df50aeadde4a420e2318b9d6716faceb1cdbc08d8794e476019d71",
-          "decision": { "action": "approve", "limitUsd": "2500.00", "reasonCode": "AUTO_OK" }
+          "inputHash": "sha3-256:b54423a7c473a5ef57851831562eb6d335513d2467cec5a66677e4219fc4c176",
+          "outputHash": "sha3-256:ac71c58da8ab7d36a2027dff44d5b331347d3888b8de77299e8cb489c6d48d05",
+          "decisionHash": "sha3-256:5aaa6718f841a1fe5816d7de277bdbd743b5c65b9e11fe534721d9a3db43ba31",
+          "schemaRef": "urn:jev:pricing:v3",
+          "adapter": {
+            "name": "jev",
+            "version": "1.0.0"
+          }
         },
-        "canonical": "{\"agentId\":\"agent://jev/pricing-v3\",\"decision\":{\"action\":\"approve\",\"limitUsd\":\"2500.00\",\"reasonCode\":\"AUTO_OK\"},\"decisionHash\":\"sha3-256:62e0ccf8c0df50aeadde4a420e2318b9d6716faceb1cdbc08d8794e476019d71\",\"decisionId\":\"01J8Z9Q0000000000000000001\",\"leafType\":\"decision\",\"prev\":null,\"schemaHash\":\"sha3-256:4b65cd1582a4328877fdb57f45dd4d4591b9271651ba7e22bdaad50ddc746d9d\",\"ts\":\"2025-09-22T00:10:00.000Z\",\"v\":\"DAR/0.1\"}",
-        "leaf": "sha3-256:abb15cbac75ef54a3b5fadddfed8682938b9c470555998b2ec2d3e5cb9a7a68e"
+        "canonical": "{\"adapter\":{\"name\":\"jev\",\"version\":\"1.0.0\"},\"agentId\":\"agent://jev/pricing-v3\",\"decisionHash\":\"sha3-256:5aaa6718f841a1fe5816d7de277bdbd743b5c65b9e11fe534721d9a3db43ba31\",\"decisionId\":\"01J8Z9Q0000000000000000001\",\"inputHash\":\"sha3-256:b54423a7c473a5ef57851831562eb6d335513d2467cec5a66677e4219fc4c176\",\"leafType\":\"decision\",\"outputHash\":\"sha3-256:ac71c58da8ab7d36a2027dff44d5b331347d3888b8de77299e8cb489c6d48d05\",\"prev\":null,\"schemaHash\":\"sha3-256:4b65cd1582a4328877fdb57f45dd4d4591b9271651ba7e22bdaad50ddc746d9d\",\"schemaRef\":\"urn:jev:pricing:v3\",\"ts\":\"2025-09-22T00:10:00.000Z\",\"v\":\"DAR/0.1\"}",
+        "leaf": "sha3-256:033860de9d5eed182fe63fd5c551f5af2bb5764d8b6eb94d3eb2c70ebe0ba03c"
       }
     },
     {
       "agentId": "agent://jev/pricing-v3",
       "decisionId": "01J8Z9Q0000000000000000002",
-      "decision": { "action": "deny", "reasonCode": "LIMIT_EXCEEDED" },
+      "input": {
+        "requestId": "req-2"
+      },
+      "output": {
+        "action": "deny",
+        "reasonCode": "LIMIT_EXCEEDED"
+      },
       "expect": {
         "dar": {
           "v": "DAR/0.1",
@@ -36,17 +65,29 @@
           "prev": "01J8Z9Q0000000000000000001",
           "leafType": "decision",
           "schemaHash": "sha3-256:4b65cd1582a4328877fdb57f45dd4d4591b9271651ba7e22bdaad50ddc746d9d",
-          "decisionHash": "sha3-256:980a2e1795a7706222ed6eb70598b1ae565c1e2bc0d6a7fd1ed9392b4a24c423",
-          "decision": { "action": "deny", "reasonCode": "LIMIT_EXCEEDED" }
+          "inputHash": "sha3-256:3f74bc6d876b8ed7f0becec81d73f635dd978e30377ce39cd3d47ff762a97b0d",
+          "outputHash": "sha3-256:980a2e1795a7706222ed6eb70598b1ae565c1e2bc0d6a7fd1ed9392b4a24c423",
+          "decisionHash": "sha3-256:9520ff395c718eedbf50fe13404cba45c2aa42c227f21da3380048a036e19542",
+          "schemaRef": "urn:jev:pricing:v3",
+          "adapter": {
+            "name": "jev",
+            "version": "1.0.0"
+          }
         },
-        "canonical": "{\"agentId\":\"agent://jev/pricing-v3\",\"decision\":{\"action\":\"deny\",\"reasonCode\":\"LIMIT_EXCEEDED\"},\"decisionHash\":\"sha3-256:980a2e1795a7706222ed6eb70598b1ae565c1e2bc0d6a7fd1ed9392b4a24c423\",\"decisionId\":\"01J8Z9Q0000000000000000002\",\"leafType\":\"decision\",\"prev\":\"01J8Z9Q0000000000000000001\",\"schemaHash\":\"sha3-256:4b65cd1582a4328877fdb57f45dd4d4591b9271651ba7e22bdaad50ddc746d9d\",\"ts\":\"2025-09-22T00:10:00.000Z\",\"v\":\"DAR/0.1\"}",
-        "leaf": "sha3-256:cda73cb058160f6197034acb2b1e1a40ac1bb621838df5fe2795a4275df748ea"
+        "canonical": "{\"adapter\":{\"name\":\"jev\",\"version\":\"1.0.0\"},\"agentId\":\"agent://jev/pricing-v3\",\"decisionHash\":\"sha3-256:9520ff395c718eedbf50fe13404cba45c2aa42c227f21da3380048a036e19542\",\"decisionId\":\"01J8Z9Q0000000000000000002\",\"inputHash\":\"sha3-256:3f74bc6d876b8ed7f0becec81d73f635dd978e30377ce39cd3d47ff762a97b0d\",\"leafType\":\"decision\",\"outputHash\":\"sha3-256:980a2e1795a7706222ed6eb70598b1ae565c1e2bc0d6a7fd1ed9392b4a24c423\",\"prev\":\"01J8Z9Q0000000000000000001\",\"schemaHash\":\"sha3-256:4b65cd1582a4328877fdb57f45dd4d4591b9271651ba7e22bdaad50ddc746d9d\",\"schemaRef\":\"urn:jev:pricing:v3\",\"ts\":\"2025-09-22T00:10:00.000Z\",\"v\":\"DAR/0.1\"}",
+        "leaf": "sha3-256:7bcf388ab198bff99c5c14903dd35adaf773491601d53470567b243e2a40bc6c"
       }
     },
     {
       "agentId": "agent://jev/refunds-v1",
       "decisionId": "01J8Z9Q0000000000000000003",
-      "decision": { "action": "approve", "amountUsd": "12.00" },
+      "input": {
+        "requestId": "req-3"
+      },
+      "output": {
+        "action": "approve",
+        "amountUsd": "12.00"
+      },
       "expect": {
         "dar": {
           "v": "DAR/0.1",
@@ -56,11 +97,17 @@
           "prev": null,
           "leafType": "decision",
           "schemaHash": "sha3-256:4b65cd1582a4328877fdb57f45dd4d4591b9271651ba7e22bdaad50ddc746d9d",
-          "decisionHash": "sha3-256:08d7f36cc0710440823a113979cc23d5a8bddd951ff86617ae1475701f7306cd",
-          "decision": { "action": "approve", "amountUsd": "12.00" }
+          "inputHash": "sha3-256:7e409f0dbb19577b84fea72a04101b0c0258ccf76a31739a9466d8b52fd8da80",
+          "outputHash": "sha3-256:08d7f36cc0710440823a113979cc23d5a8bddd951ff86617ae1475701f7306cd",
+          "decisionHash": "sha3-256:5948b68716b7a556b040ab070509fb58b7eba7019ec5fea227e1f54feed75102",
+          "schemaRef": "urn:jev:pricing:v3",
+          "adapter": {
+            "name": "jev",
+            "version": "1.0.0"
+          }
         },
-        "canonical": "{\"agentId\":\"agent://jev/refunds-v1\",\"decision\":{\"action\":\"approve\",\"amountUsd\":\"12.00\"},\"decisionHash\":\"sha3-256:08d7f36cc0710440823a113979cc23d5a8bddd951ff86617ae1475701f7306cd\",\"decisionId\":\"01J8Z9Q0000000000000000003\",\"leafType\":\"decision\",\"prev\":null,\"schemaHash\":\"sha3-256:4b65cd1582a4328877fdb57f45dd4d4591b9271651ba7e22bdaad50ddc746d9d\",\"ts\":\"2025-09-22T00:10:00.000Z\",\"v\":\"DAR/0.1\"}",
-        "leaf": "sha3-256:3329c8272340662ca12a44f8572584c97cd8908e5fa56694a5c61a2b1c20cbc0"
+        "canonical": "{\"adapter\":{\"name\":\"jev\",\"version\":\"1.0.0\"},\"agentId\":\"agent://jev/refunds-v1\",\"decisionHash\":\"sha3-256:5948b68716b7a556b040ab070509fb58b7eba7019ec5fea227e1f54feed75102\",\"decisionId\":\"01J8Z9Q0000000000000000003\",\"inputHash\":\"sha3-256:7e409f0dbb19577b84fea72a04101b0c0258ccf76a31739a9466d8b52fd8da80\",\"leafType\":\"decision\",\"outputHash\":\"sha3-256:08d7f36cc0710440823a113979cc23d5a8bddd951ff86617ae1475701f7306cd\",\"prev\":null,\"schemaHash\":\"sha3-256:4b65cd1582a4328877fdb57f45dd4d4591b9271651ba7e22bdaad50ddc746d9d\",\"schemaRef\":\"urn:jev:pricing:v3\",\"ts\":\"2025-09-22T00:10:00.000Z\",\"v\":\"DAR/0.1\"}",
+        "leaf": "sha3-256:21927338252576fd72594fcdd8b44ba707741477a3e6184d74c9c2f9e0636b0d"
       }
     }
   ]

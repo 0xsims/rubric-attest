@@ -5,7 +5,9 @@
  * field names never appear anywhere else in the pipeline. Everything downstream
  * consumes the DAR builder inputs produced by `toDecision()`.
  */
-import type { DarBuildInput, LeafType } from "@0xsims/attest-decision";
+import type { DarBuildInput } from "@0xsims/attest-decision";
+
+const JEV_ADAPTER = { name: "jev", version: "1.0.0" } as const;
 
 /** Jev's documented decision shape (schema tag "jev.decision/1"). */
 export interface JevDecision {
@@ -55,22 +57,25 @@ function jevSchemaDescriptor(jev: JevDecision): Record<string, unknown> {
 }
 
 /**
- * Map a Jev decision to DAR builder inputs. Absent optional fields are omitted
- * (not set to `undefined`) so the decision payload stays strict-JCS clean.
+ * Map a Jev decision to hashes-only DAR builder inputs: the subject is the
+ * `input`, the outcome is the `output`, and the policy descriptor is the
+ * `schema`. Absent optional fields are omitted (not `undefined`) so each stays
+ * strict-JCS clean. No raw content reaches the DAR core — only its hashes.
  */
 export function toDecision(jev: JevDecision): DarBuildInput {
-  const decision: Record<string, unknown> = {
-    action: jev.outcome.action,
-    subject: jev.subject,
-  };
-  if (jev.outcome.score !== undefined) decision.score = jev.outcome.score;
-  if (jev.outcome.reasons !== undefined) decision.reasons = jev.outcome.reasons;
+  const output: Record<string, unknown> = { action: jev.outcome.action };
+  if (jev.outcome.score !== undefined) output.score = jev.outcome.score;
+  if (jev.outcome.reasons !== undefined) output.reasons = jev.outcome.reasons;
 
-  const leafType: LeafType = "decision";
   return {
     agentId: jev.agent.id,
-    decision,
     schema: jevSchemaDescriptor(jev),
-    leafType,
+    input: jev.subject,
+    output,
+    meta: {
+      schemaRef: `${jev.policy.id}@${jev.policy.revision}`,
+      adapter: { ...JEV_ADAPTER },
+      leafType: "decision",
+    },
   };
 }

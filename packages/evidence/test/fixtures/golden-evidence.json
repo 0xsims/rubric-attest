@@ -18,38 +18,36 @@
         "prev": null,
         "leafType": "decision",
         "schemaHash": "sha3-256:9a4220d93e5baed9e6ecf285048446dd0f779ade439bc21abbd060035d0cffcb",
-        "decisionHash": "sha3-256:bdca5fcf479e1de01280e8e1836c0ed7d4bfb9108f24a065b5c95c667603e190",
-        "decision": {
-          "action": "approve",
-          "n": 1
-        }
+        "inputHash": "sha3-256:012c3aa852c17a54e1320ed6ddca40145d6d11f10ba571c85d6128504362d94a",
+        "outputHash": "sha3-256:944e0b76f2b4184071a43aeb522382b17cf03d6b3a0eba4ba6d31b3257e2a625",
+        "decisionHash": "sha3-256:9a6ab398384256de97542d88756805391a510de1e8f2f2951ad9161e0126bd98"
       },
       "merkleProof": {
-        "leaf": "sha3-256:1a2ccf22796fdc4992832d272576da444f4fb06bc66ab1facc23ee8f7d1bc9f6",
+        "leaf": "sha3-256:5136660bd7f84238cb4601897ee3cad1c68b4fc00b89aa5dc942d4f2a76d867f",
         "steps": [
           {
-            "sibling": "sha3-256:955327bee5dc152d7461a9dbd0fbb6a1d6a19b0ea836f28db8cf59907d4a9c44",
+            "sibling": "sha3-256:30787dc68834c04a846561f843e944d6a58955faec39261444b0594ddd761e61",
             "position": "right"
           },
           {
-            "sibling": "sha3-256:a2f218db50e3a499da15b4bd6ee9fc27e1a140494b335ee715ce784fd8b7e1a9",
+            "sibling": "sha3-256:9fbed811b8734936382ef0b639caa6a4ffa79f8801356cb067284e7013d5f053",
             "position": "right"
           }
         ],
-        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+        "root": "sha3-256:f8fb1b087e9a20d9d9687b49a9ec85f39e074a3975ccbdd6bd5f29d2b2c064b0"
       },
       "anchorRef": {
         "network": "hedera-testnet",
         "topicId": "0.0.1234",
         "sequenceNumber": 1,
-        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921",
+        "root": "sha3-256:f8fb1b087e9a20d9d9687b49a9ec85f39e074a3975ccbdd6bd5f29d2b2c064b0",
         "consensusTimestamp": "2025-09-22T00:00:00.000Z"
       },
       "signature": {
         "alg": "ed25519",
         "keyRef": "key-1",
         "signature": "sig-01J8Z9Q0000000000000000001",
-        "over": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+        "over": "sha3-256:f8fb1b087e9a20d9d9687b49a9ec85f39e074a3975ccbdd6bd5f29d2b2c064b0"
       }
     },
     {
@@ -62,38 +60,36 @@
         "prev": "01J8Z9Q0000000000000000001",
         "leafType": "decision",
         "schemaHash": "sha3-256:9a4220d93e5baed9e6ecf285048446dd0f779ade439bc21abbd060035d0cffcb",
-        "decisionHash": "sha3-256:517cde9a0aab5a0fec6ef2b5d7bc7dcb800c52b842b3de25d3e12d15455023ee",
-        "decision": {
-          "action": "approve",
-          "n": 2
-        }
+        "inputHash": "sha3-256:70b75db0f771995fb37347027b82f11c78f7d6b306921f4f5041589d42f94e28",
+        "outputHash": "sha3-256:944e0b76f2b4184071a43aeb522382b17cf03d6b3a0eba4ba6d31b3257e2a625",
+        "decisionHash": "sha3-256:b8136de72a67d4213db303e6bac35cf738f80452a766ebc2f5634de8d20549bf"
       },
       "merkleProof": {
-        "leaf": "sha3-256:955327bee5dc152d7461a9dbd0fbb6a1d6a19b0ea836f28db8cf59907d4a9c44",
+        "leaf": "sha3-256:30787dc68834c04a846561f843e944d6a58955faec39261444b0594ddd761e61",
         "steps": [
           {
-            "sibling": "sha3-256:1a2ccf22796fdc4992832d272576da444f4fb06bc66ab1facc23ee8f7d1bc9f6",
+            "sibling": "sha3-256:5136660bd7f84238cb4601897ee3cad1c68b4fc00b89aa5dc942d4f2a76d867f",
             "position": "left"
           },
           {
-            "sibling": "sha3-256:a2f218db50e3a499da15b4bd6ee9fc27e1a140494b335ee715ce784fd8b7e1a9",
+            "sibling": "sha3-256:9fbed811b8734936382ef0b639caa6a4ffa79f8801356cb067284e7013d5f053",
             "position": "right"
           }
         ],
-        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+        "root": "sha3-256:f8fb1b087e9a20d9d9687b49a9ec85f39e074a3975ccbdd6bd5f29d2b2c064b0"
       },
       "anchorRef": {
         "network": "hedera-testnet",
         "topicId": "0.0.1234",
         "sequenceNumber": 2,
-        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921",
+        "root": "sha3-256:f8fb1b087e9a20d9d9687b49a9ec85f39e074a3975ccbdd6bd5f29d2b2c064b0",
         "consensusTimestamp": "2025-09-22T00:00:00.000Z"
       },
       "signature": {
         "alg": "ed25519",
         "keyRef": "key-1",
         "signature": "sig-01J8Z9Q0000000000000000002",
-        "over": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+        "over": "sha3-256:f8fb1b087e9a20d9d9687b49a9ec85f39e074a3975ccbdd6bd5f29d2b2c064b0"
       }
     },
     {
@@ -106,38 +102,36 @@
         "prev": "01J8Z9Q0000000000000000002",
         "leafType": "decision",
         "schemaHash": "sha3-256:395150d4c6b042521533513477de14b44854d48fe16a58813c47978330b3e98e",
-        "decisionHash": "sha3-256:5a56ce6dc70c12cba5a205783cfc7d3427a805f580c5101840c38c612bb93a45",
-        "decision": {
-          "action": "deny",
-          "n": 3
-        }
+        "inputHash": "sha3-256:0a8c8af814fee6c39d9b9778dc0b9260879e3800b98eece8cb4c20dd66e1b97a",
+        "outputHash": "sha3-256:bca589477b8b4fbf61ccd0d94ba04266448be0ee73d1a8df1554339465c41fea",
+        "decisionHash": "sha3-256:0740d7214b6a62052d52502b1c221b2512d640dff78ccb4870890740497e8330"
       },
       "merkleProof": {
-        "leaf": "sha3-256:297f9c79418ab5ff063c996085c2a298917889e9954bf2dbeb4168e887c642e8",
+        "leaf": "sha3-256:29aa752be45adb8f683b461f768b8c5c7391fbb73d534771a9b105896308fd4a",
         "steps": [
           {
-            "sibling": "sha3-256:297f9c79418ab5ff063c996085c2a298917889e9954bf2dbeb4168e887c642e8",
+            "sibling": "sha3-256:29aa752be45adb8f683b461f768b8c5c7391fbb73d534771a9b105896308fd4a",
             "position": "right"
           },
           {
-            "sibling": "sha3-256:52675095ea8e41b453b857c9eb1903f093b576f48b27bffbc8bd0b35e5342586",
+            "sibling": "sha3-256:c34575f85de14a22dd108fcb938d1e40ddee7f3702f375bbaa068672e7c5ca11",
             "position": "left"
           }
         ],
-        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+        "root": "sha3-256:f8fb1b087e9a20d9d9687b49a9ec85f39e074a3975ccbdd6bd5f29d2b2c064b0"
       },
       "anchorRef": {
         "network": "hedera-testnet",
         "topicId": "0.0.1234",
         "sequenceNumber": 3,
-        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921",
+        "root": "sha3-256:f8fb1b087e9a20d9d9687b49a9ec85f39e074a3975ccbdd6bd5f29d2b2c064b0",
         "consensusTimestamp": "2025-09-22T00:00:00.000Z"
       },
       "signature": {
         "alg": "ed25519",
         "keyRef": "key-1",
         "signature": "sig-01J8Z9Q0000000000000000003",
-        "over": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+        "over": "sha3-256:f8fb1b087e9a20d9d9687b49a9ec85f39e074a3975ccbdd6bd5f29d2b2c064b0"
       }
     }
   ],

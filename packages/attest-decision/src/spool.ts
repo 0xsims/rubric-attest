@@ -27,13 +27,15 @@ import {
   writeSync,
 } from "node:fs";
 import { dirname } from "node:path";
-import type { DarCore } from "./constants.js";
+import type { DarCore, PayloadRecord } from "./constants.js";
 
 const DEFAULT_MAX_BYTES = 50 * 1024 * 1024; // 50 MB (tasks/P1.md)
 
 export interface SpoolRecord {
   seq: number;
   dar: DarCore;
+  /** Raw content, present only in `payload` mode (spec §4). */
+  payload?: PayloadRecord;
 }
 
 export interface SpoolOptions {
@@ -122,9 +124,9 @@ export class Spool {
    * the caller's `attest()` path. Crossing the cap only flags compaction, which
    * `compactIfNeeded()` performs off the caller path (see the Attestor flush).
    */
-  append(dar: DarCore): number {
+  append(dar: DarCore, payload?: PayloadRecord): number {
     const seq = ++this.seq;
-    const record: SpoolRecord = { seq, dar };
+    const record: SpoolRecord = payload ? { seq, dar, payload } : { seq, dar };
     const line = JSON.stringify(record) + "\n";
     const buf = Buffer.from(line, "utf8");
     writeFully(this.fd, buf); // loop over short writes so a line is never torn

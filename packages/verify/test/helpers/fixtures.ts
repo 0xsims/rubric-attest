@@ -22,7 +22,7 @@ export function makeDars(
     newDecisionId: () => `01J8Z9Q${String(++n).padStart(19, "0")}`,
     now: () => FIXED_MS,
   });
-  return decisions.map((d) => builder.build({ agentId, decision: d, schema }));
+  return decisions.map((d) => builder.build({ agentId, input: d, output: { ok: true }, schema }));
 }
 
 export interface Fixture {

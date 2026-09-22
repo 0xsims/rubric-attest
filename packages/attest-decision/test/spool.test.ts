@@ -12,11 +12,15 @@ function dar(n: number): DarCore {
     ts: "2025-09-22T00:10:00.000Z",
     prev: null,
     leafType: "decision",
-    schemaHash: "sha3-256:0000000000000000000000000000000000000000000000000000000000000000",
-    decisionHash: "sha3-256:1111111111111111111111111111111111111111111111111111111111111111",
-    decision: { n },
+    schemaHash: `sha3-256:${"0".repeat(64)}`,
+    inputHash: `sha3-256:${"1".repeat(64)}`,
+    outputHash: `sha3-256:${"2".repeat(64)}`,
+    decisionHash: `sha3-256:${"3".repeat(64)}`,
   };
 }
+
+/** Recover the record's ordinal from its decisionId (hashes-only core has no payload). */
+const nOf = (d: DarCore): number => Number(d.decisionId.slice(2));
 
 let dir: string;
 let path: string;
@@ -35,7 +39,7 @@ describe("Spool", () => {
     s.append(dar(2));
     const pending = s.pending();
     expect(pending.map((r) => r.seq)).toEqual([1, 2]);
-    expect(pending.map((r) => r.dar.decision.n)).toEqual([1, 2]);
+    expect(pending.map((r) => nOf(r.dar))).toEqual([1, 2]);
     s.close();
   });
 
@@ -47,7 +51,7 @@ describe("Spool", () => {
     s1.close(); // no fsync, no ack — like a process that just went away
 
     const s2 = new Spool(path);
-    expect(s2.pending().map((r) => r.dar.decision.n)).toEqual([1, 2, 3]);
+    expect(s2.pending().map((r) => nOf(r.dar))).toEqual([1, 2, 3]);
     expect(s2.currentSeq()).toBe(3);
     s2.close();
   });
@@ -79,8 +83,8 @@ describe("Spool", () => {
   });
 
   it("enforces the byte cap by dropping oldest (compaction is deferred off the append path)", () => {
-    // Tiny cap so a few records trip the cap.
-    const s = new Spool(path, { maxBytes: 400 });
+    // Small cap so only the newest few records survive after compaction.
+    const s = new Spool(path, { maxBytes: 2000 });
     for (let i = 1; i <= 50; i++) s.append(dar(i));
     // append() only flags; nothing is dropped until compactIfNeeded() runs.
     expect(s.needsCompaction()).toBe(true);
@@ -91,7 +95,7 @@ describe("Spool", () => {
     expect(pending.length).toBeLessThan(50);
     expect(s.droppedCount()).toBe(50 - pending.length);
     // Survivors are the newest records (drop-oldest).
-    const ns = pending.map((r) => r.dar.decision.n as number);
+    const ns = pending.map((r) => nOf(r.dar));
     expect(ns[ns.length - 1]).toBe(50);
     expect(Math.min(...ns)).toBeGreaterThan(1);
     s.close();

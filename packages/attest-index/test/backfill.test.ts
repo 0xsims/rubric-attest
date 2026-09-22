@@ -22,8 +22,9 @@ function bundle(
       prev,
       leafType: "decision",
       schemaHash,
+      inputHash: `sha3-256:in-${id}`,
+      outputHash: `sha3-256:out-${id}`,
       decisionHash: `sha3-256:${id}`,
-      decision: { id },
     },
   };
 }

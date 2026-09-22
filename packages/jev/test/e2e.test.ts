@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Attestor, hashJson, type DarCore, type Transport } from "@0xsims/attest-decision";
+import { Attestor, decisionHashOf, hashJson, type DarCore, type Transport } from "@0xsims/attest-decision";
 import { StubJevClient, toDecision } from "../src/index.js";
 
 class MockTransport implements Transport {
@@ -54,14 +54,21 @@ describe("jev adapter end-to-end through the P1 batcher", () => {
     expect(r2!.prev).toBe(id1); // per-agent chaining
 
     // Hashes independently recomputable from the mapped inputs (JCS + SHA3-256).
-    expect(r1!.decisionHash).toBe(hashJson(in1.decision));
     expect(r1!.schemaHash).toBe(hashJson(in1.schema));
+    expect(r1!.inputHash).toBe(hashJson(in1.input));
+    expect(r1!.outputHash).toBe(hashJson(in1.output));
+    expect(r1!.decisionHash).toBe(decisionHashOf(r1!.schemaHash, r1!.inputHash, r1!.outputHash));
     expect(r2!.schemaHash).toBe(r1!.schemaHash); // same policy -> same schemaHash
 
-    // Mapped decision content.
-    expect(r1!.decision.action).toBe("approve");
-    expect(r2!.decision.action).toBe("deny");
-    expect(r2!.decision.reasons).toEqual(["amount_over_limit"]);
+    // The core carries only hashes — no raw content.
+    expect("decision" in r1!).toBe(false);
+    expect("input" in r1!).toBe(false);
+    expect("output" in r1!).toBe(false);
+
+    // Mapped output content (via the adapter, not in the core).
+    expect((in1.output as { action: string }).action).toBe("approve");
+    expect((in2.output as { action: string }).action).toBe("deny");
+    expect((in2.output as { reasons?: string[] }).reasons).toEqual(["amount_over_limit"]);
 
     await a.close();
   });

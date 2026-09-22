@@ -12,11 +12,14 @@ describe("jev mapping", () => {
       subject: { amountUsd: 10 },
       emittedAt: "2025-09-22T00:00:00.000Z",
     };
-    const input = toDecision(jev);
-    expect(input.agentId).toBe("agent://jev/x");
-    expect(input.leafType).toBe("decision");
-    expect(input.decision).toEqual({ action: "approve", subject: { amountUsd: 10 }, score: 90 });
-    expect(input.schema).toEqual({
+    const d = toDecision(jev);
+    expect(d.agentId).toBe("agent://jev/x");
+    expect(d.meta?.leafType).toBe("decision");
+    expect(d.meta?.adapter).toEqual({ name: "jev", version: "1.0.0" });
+    expect(d.meta?.schemaRef).toBe("p1@2");
+    expect(d.input).toEqual({ amountUsd: 10 }); // the subject
+    expect(d.output).toEqual({ action: "approve", score: 90 }); // the outcome
+    expect(d.schema).toEqual({
       source: "jev",
       schema: "jev.decision/1",
       policyId: "p1",
@@ -24,7 +27,7 @@ describe("jev mapping", () => {
     });
   });
 
-  it("omits absent optional fields so the payload is strict-JCS clean", () => {
+  it("omits absent optional outcome fields so the output stays strict-JCS clean", () => {
     const jev: JevDecision = {
       jevSchema: "jev.decision/1",
       agent: { id: "a" },
@@ -33,10 +36,9 @@ describe("jev mapping", () => {
       subject: {},
       emittedAt: "2025-09-22T00:00:00.000Z",
     };
-    const input = toDecision(jev);
-    expect("score" in input.decision).toBe(false);
-    expect("reasons" in input.decision).toBe(false);
-    expect(() => canonicalize(input.decision)).not.toThrow();
+    const d = toDecision(jev);
+    expect(d.output).toEqual({ action: "approve" });
+    expect(() => canonicalize(d.output)).not.toThrow();
   });
 
   it("stub client emits approve/deny by limit", () => {

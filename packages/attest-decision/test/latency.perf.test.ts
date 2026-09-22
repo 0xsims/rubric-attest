@@ -23,7 +23,7 @@ afterEach(() => {
 describe("attest() latency", () => {
   it("adds well under 1 ms to the caller (median)", async () => {
     const a = new Attestor({ transport: noopTransport, spoolPath, maxWaitMs: 60_000 });
-    const input = (n: number) => ({ agentId: "A", schema: { type: "object" }, decision: { n } });
+    const input = (n: number) => ({ agentId: "A", schema: { type: "object" }, input: { n }, output: { ok: true } });
 
     // Warm up JIT and the schema-hash cache.
     for (let i = 0; i < 500; i++) a.attest(input(i));

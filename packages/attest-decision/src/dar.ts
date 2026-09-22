@@ -1,24 +1,42 @@
 /**
- * DAR builder (spec/dar-0.1.md §2). Assembles a DAR core from adapter inputs:
- * mints a ULID `decisionId`, computes `schemaHash`/`decisionHash` (JCS+SHA3-256),
- * and maintains the per-agent `prev` chain.
+ * DAR builder (spec/dar-0.1.md §2). Assembles a HASHES-ONLY DAR core from
+ * adapter inputs: hashes the schema, input, and output (JCS+SHA3-256), derives
+ * `decisionHash` over those three commitments, mints a ULID `decisionId`, and
+ * maintains the per-agent `prev` chain. The core never carries raw content.
  */
-import { DAR_VERSION, type DarCore, type HashString, type LeafType } from "./constants.js";
+import {
+  DAR_VERSION,
+  type AdapterInfo,
+  type DarCore,
+  type HashString,
+  type LeafType,
+  type PayloadRecord,
+} from "./constants.js";
 import { hashJson, sha3_256 } from "./hash.js";
 import { canonicalize, canonicalizeToBytes } from "./jcs.js";
 import { ulid as defaultUlid } from "./ulid.js";
 
 const LEAF_TYPES: ReadonlySet<string> = new Set(["decision", "schema-change", "checkpoint"]);
 const HASH_STRING = /^sha3-256:[0-9a-f]{64}$/;
-const DEFAULT_MAX_DECISION_BYTES = 256 * 1024; // bounds attest() latency + spool line size
+const DEFAULT_MAX_DECISION_BYTES = 256 * 1024; // bounds attest() latency + payload size
+
+/** Non-content metadata an adapter may attach to a decision. */
+export interface DarMeta {
+  schemaRef?: string;
+  adapter?: AdapterInfo;
+  leafType?: LeafType;
+}
 
 export interface DarBuildInput {
   agentId: string;
-  decision: Record<string, unknown>;
+  /** Adapter-supplied decision input; hashed to `inputHash`. */
+  input: unknown;
+  /** Adapter-supplied decision output; hashed to `outputHash`. */
+  output: unknown;
   /** Schema descriptor to hash, or a precomputed `schemaHash`. One is required. */
-  schema?: Record<string, unknown>;
+  schema?: unknown;
   schemaHash?: HashString;
-  leafType?: LeafType;
+  meta?: DarMeta;
 }
 
 export interface DarBuilderDeps {
@@ -26,8 +44,13 @@ export interface DarBuilderDeps {
   newDecisionId?: () => string;
   /** Injectable clock in epoch ms (default: Date.now). */
   now?: () => number;
-  /** Reject a decision whose canonical form exceeds this many bytes. Default 256 KiB. */
+  /** Reject a decision whose canonical input+output exceeds this many bytes. Default 256 KiB. */
   maxDecisionBytes?: number;
+}
+
+/** Derive `decisionHash` from the three content commitments (spec §4.2). */
+export function decisionHashOf(schemaHash: HashString, inputHash: HashString, outputHash: HashString): HashString {
+  return hashJson({ schemaHash, inputHash, outputHash });
 }
 
 export class DarBuilder {
@@ -48,29 +71,28 @@ export class DarBuilder {
   }
 
   build(input: DarBuildInput): DarCore {
-    const { agentId, decision } = input;
+    const { agentId } = input;
     if (typeof agentId !== "string" || agentId.length === 0) {
       throw new Error("DAR: agentId must be a non-empty string");
     }
-    if (decision === null || typeof decision !== "object" || Array.isArray(decision)) {
-      throw new Error("DAR: decision must be a JSON object");
-    }
-    const leafType: LeafType = input.leafType ?? "decision";
+    const leafType: LeafType = input.meta?.leafType ?? "decision";
     if (!LEAF_TYPES.has(leafType)) {
       throw new Error(`DAR: unknown leafType '${leafType}'`);
     }
 
     const schemaHash = this.resolveSchemaHash(input);
 
-    // Canonicalize once, cap the size (bounds attest() latency and spool line
-    // size), then hash the same bytes. Throws on non-JSON payloads.
-    const decisionBytes = canonicalizeToBytes(decision);
-    if (decisionBytes.length > this.maxDecisionBytes) {
+    // Canonicalize input/output once, cap the combined size, then hash.
+    const inputBytes = canonicalizeToBytes(input.input);
+    const outputBytes = canonicalizeToBytes(input.output);
+    if (inputBytes.length + outputBytes.length > this.maxDecisionBytes) {
       throw new Error(
-        `DAR: decision is ${decisionBytes.length} bytes; exceeds maxDecisionBytes (${this.maxDecisionBytes})`,
+        `DAR: input+output is ${inputBytes.length + outputBytes.length} bytes; exceeds maxDecisionBytes (${this.maxDecisionBytes})`,
       );
     }
-    const decisionHash = sha3_256(decisionBytes);
+    const inputHash = sha3_256(inputBytes);
+    const outputHash = sha3_256(outputBytes);
+    const decisionHash = decisionHashOf(schemaHash, inputHash, outputHash);
 
     const decisionId = this.newDecisionId();
     const prev = this.heads.get(agentId) ?? null;
@@ -84,8 +106,11 @@ export class DarBuilder {
       prev,
       leafType,
       schemaHash,
+      inputHash,
+      outputHash,
       decisionHash,
-      decision,
+      ...(input.meta?.schemaRef !== undefined ? { schemaRef: input.meta.schemaRef } : {}),
+      ...(input.meta?.adapter !== undefined ? { adapter: input.meta.adapter } : {}),
     };
 
     this.heads.set(agentId, decisionId);
@@ -99,12 +124,15 @@ export class DarBuilder {
       }
       return input.schemaHash;
     }
-    if (!input.schema) throw new Error("DAR: schema or schemaHash is required");
-    const cached = this.schemaCache.get(input.schema);
-    if (cached) return cached;
-    const h = hashJson(input.schema);
-    this.schemaCache.set(input.schema, h);
-    return h;
+    if (input.schema === undefined) throw new Error("DAR: schema or schemaHash is required");
+    if (typeof input.schema === "object" && input.schema !== null) {
+      const cached = this.schemaCache.get(input.schema);
+      if (cached) return cached;
+      const h = hashJson(input.schema);
+      this.schemaCache.set(input.schema, h);
+      return h;
+    }
+    return hashJson(input.schema);
   }
 
   /** Current chain head (last minted decisionId) for an agent, if any. */
@@ -116,6 +144,17 @@ export class DarBuilder {
   seedHead(agentId: string, decisionId: string): void {
     this.heads.set(agentId, decisionId);
   }
+}
+
+/** Build the raw payload record for `payload`-mode transmission (never in the core). */
+export function toPayload(decisionId: string, input: DarBuildInput): PayloadRecord {
+  return {
+    decisionId,
+    ...(input.schema !== undefined ? { schema: input.schema } : {}),
+    input: input.input,
+    output: input.output,
+    ...(input.meta !== undefined ? { meta: input.meta } : {}),
+  };
 }
 
 /** The Merkle leaf hash of a DAR core: SHA3-256 over its JCS bytes (spec §4.3). */
