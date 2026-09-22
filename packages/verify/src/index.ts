@@ -26,6 +26,7 @@ export type {
   SignatureResult,
   VerifiableBundle,
   VerificationResult,
+  VerifyStatus,
   MerkleProof,
   MerkleProofStep,
   AnchorRef,

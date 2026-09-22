@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import tsx
+#!/usr/bin/env node
 /**
  * CLI: rebuild the attestation index from a bundle store.
  *   rubric-index-backfill <bundle-store-dir> <index-dir>

@@ -68,6 +68,9 @@ export interface SignatureResult {
 /** Verifies a service signature over an anchored root. Injected (mockable). */
 export type SignatureVerifier = (signature: BatchSignature, root: HashString) => SignatureResult;
 
+/** Version gate outcome (spec §5.1). */
+export type VerifyStatus = "ok" | "needs-upgrade" | "rejected";
+
 /** The decision-verify result body. */
 export interface VerificationResult {
   decisionId: string;
@@ -75,10 +78,22 @@ export interface VerificationResult {
   merkleProof: MerkleProof;
   anchorRef: AnchorRef;
   signature: SignatureResult;
-  /** True when the record no longer matches its anchored commitment (tampering). */
+  /** True when the record no longer matches the proof/root carried in its bundle (tampering). */
   drift: boolean;
-  /** Overall: no drift AND signature verified. */
-  verified: boolean;
+  /**
+   * Version gate per spec §5.1: `rejected` (unknown DAR major or bad leafType),
+   * `needs-upgrade` (known major but a newer minor this verifier can't fully
+   * check), or `ok` (this verifier fully understands the record's version).
+   */
+  status: VerifyStatus;
+  /**
+   * INTERNAL CONSISTENCY ONLY. True iff status is `ok`, there is no drift, and
+   * the supplied signature verified. This attests that the bundle is internally
+   * self-consistent — it is NOT proof that the Merkle root was anchored on HCS,
+   * nor that the signing key is trusted. Those require the (out-of-scope)
+   * attestation service; this route does not contact any ledger.
+   */
+  consistencyVerified: boolean;
 }
 
 /** A fork point: a decision with more than one child in the chain. */

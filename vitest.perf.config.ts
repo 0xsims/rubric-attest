@@ -5,6 +5,7 @@ import { defineConfig } from "vitest/config";
 // Kept out of the default `test` run — see vitest.config.ts — and run as its own
 // CI job so a slow shared runner cannot flake the main check.
 export default defineConfig({
+  resolve: { conditions: ["development"] },
   test: {
     include: ["packages/*/test/**/*.perf.test.ts"],
     environment: "node",

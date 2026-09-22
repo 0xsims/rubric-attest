@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import tsx
+#!/usr/bin/env node
 /**
  * CLI (tasks/P5.md):
  *   rubric-evidence export --agent <id> --index <dir> --store <dir> \

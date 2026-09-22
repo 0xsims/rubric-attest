@@ -48,21 +48,49 @@ attestor.attest({
 });
 ```
 
-Records are appended to a durable spool and flushed in batches (64 records or
-5000 ms) with one POST per flush to `/v1/tiered-attest`. A `kill -9` at any point
-loses zero spooled records — the next process drains the spool on startup.
+Records are appended to a durable spool (its parent directory is created if
+missing) and flushed in batches (64 records or 5000 ms) with one POST per flush
+to `/v1/tiered-attest`. A `kill -9` at any point loses zero spooled records — the
+next process drains the spool on startup.
+
+### Guarantees and limits
+
+- **`attest()` latency** is sub-millisecond for typical payloads; decisions
+  larger than `maxDecisionBytes` (default 256 KiB) are rejected rather than
+  block the caller.
+- **Durability:** `writeSync` (no fsync) makes a record survive process death
+  (`kill -9`); a background `fsync` before each flush, plus a directory fsync
+  after spool compaction, defend against power loss. A write failure (disk full)
+  surfaces via `onError` — the record is not spooled.
+- **Delivery is at-least-once.** A lost response or a crash can re-send a batch;
+  consumers must de-duplicate by `decisionId`.
+- **Back-pressure:** under a sustained transport outage the spool caps at 50 MB
+  (drop-oldest, reported via `onError`) and the in-memory queue caps at
+  `maxQueue`; the HTTP transport times out (`timeoutMs`, default 30 s) and
+  refuses a non-HTTPS `baseUrl` unless `allowInsecure` is set.
+- **`prev` chaining is per producer process.** Multiple producers writing the
+  same `agentId` form independent branches; there is no global sequencing.
+- **`chainHead` (index) returns the latest `decisionId`** — an approximation of
+  the chain tip; use the verify package's `chainCheck` for true continuity.
+- **Verification scope:** the verify route checks a bundle's *internal*
+  consistency (hashes, Merkle proof folds to the bundle's root, signature) and
+  the DAR version. It does **not** confirm the root was anchored on HCS or that
+  the signing key is trusted — that is the (separate) attestation service.
 
 ## Development
 
 Requires Node.js >= 20.
 
 ```sh
-npm install      # install workspace deps
-npm run lint     # eslint
+npm install       # install workspace deps
+npm run lint      # eslint
 npm run typecheck # tsc --noEmit across all packages
-npm run test     # vitest run
-npm run check    # all three
+npm run build     # emit dist JS + .d.ts for each package (consumable output)
+npm run test      # vitest run (resolves @rubric/* to source via the dev condition)
+npm run check     # lint + typecheck + test
 ```
 
 This is an npm-workspaces monorepo; `npm install` at the root wires the packages
-together.
+together. Each package publishes its built `dist/` (`exports` map with a
+`development` condition that points tools at `src/` in this workspace); run
+`npm run build` before publishing.

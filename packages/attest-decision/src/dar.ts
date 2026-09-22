@@ -4,9 +4,13 @@
  * and maintains the per-agent `prev` chain.
  */
 import { DAR_VERSION, type DarCore, type HashString, type LeafType } from "./constants.js";
-import { hashJson } from "./hash.js";
-import { canonicalize } from "./jcs.js";
+import { hashJson, sha3_256 } from "./hash.js";
+import { canonicalize, canonicalizeToBytes } from "./jcs.js";
 import { ulid as defaultUlid } from "./ulid.js";
+
+const LEAF_TYPES: ReadonlySet<string> = new Set(["decision", "schema-change", "checkpoint"]);
+const HASH_STRING = /^sha3-256:[0-9a-f]{64}$/;
+const DEFAULT_MAX_DECISION_BYTES = 256 * 1024; // bounds attest() latency + spool line size
 
 export interface DarBuildInput {
   agentId: string;
@@ -22,11 +26,14 @@ export interface DarBuilderDeps {
   newDecisionId?: () => string;
   /** Injectable clock in epoch ms (default: Date.now). */
   now?: () => number;
+  /** Reject a decision whose canonical form exceeds this many bytes. Default 256 KiB. */
+  maxDecisionBytes?: number;
 }
 
 export class DarBuilder {
   private readonly newDecisionId: () => string;
   private readonly now: () => number;
+  private readonly maxDecisionBytes: number;
   private readonly heads = new Map<string, string>();
   // Keyed by object identity: reusing the same schema object across build()
   // calls skips re-hashing. CONTRACT: schema objects must be treated as
@@ -37,6 +44,7 @@ export class DarBuilder {
   constructor(deps: DarBuilderDeps = {}) {
     this.newDecisionId = deps.newDecisionId ?? defaultUlid;
     this.now = deps.now ?? Date.now;
+    this.maxDecisionBytes = deps.maxDecisionBytes ?? DEFAULT_MAX_DECISION_BYTES;
   }
 
   build(input: DarBuildInput): DarCore {
@@ -47,10 +55,22 @@ export class DarBuilder {
     if (decision === null || typeof decision !== "object" || Array.isArray(decision)) {
       throw new Error("DAR: decision must be a JSON object");
     }
+    const leafType: LeafType = input.leafType ?? "decision";
+    if (!LEAF_TYPES.has(leafType)) {
+      throw new Error(`DAR: unknown leafType '${leafType}'`);
+    }
 
     const schemaHash = this.resolveSchemaHash(input);
-    // Canonicalizes; throws on non-JSON payloads before anything is minted.
-    const decisionHash = hashJson(decision);
+
+    // Canonicalize once, cap the size (bounds attest() latency and spool line
+    // size), then hash the same bytes. Throws on non-JSON payloads.
+    const decisionBytes = canonicalizeToBytes(decision);
+    if (decisionBytes.length > this.maxDecisionBytes) {
+      throw new Error(
+        `DAR: decision is ${decisionBytes.length} bytes; exceeds maxDecisionBytes (${this.maxDecisionBytes})`,
+      );
+    }
+    const decisionHash = sha3_256(decisionBytes);
 
     const decisionId = this.newDecisionId();
     const prev = this.heads.get(agentId) ?? null;
@@ -62,7 +82,7 @@ export class DarBuilder {
       agentId,
       ts,
       prev,
-      leafType: input.leafType ?? "decision",
+      leafType,
       schemaHash,
       decisionHash,
       decision,
@@ -73,7 +93,12 @@ export class DarBuilder {
   }
 
   private resolveSchemaHash(input: DarBuildInput): HashString {
-    if (input.schemaHash) return input.schemaHash;
+    if (input.schemaHash) {
+      if (!HASH_STRING.test(input.schemaHash)) {
+        throw new Error(`DAR: schemaHash must be 'sha3-256:<64 hex>', got '${input.schemaHash}'`);
+      }
+      return input.schemaHash;
+    }
     if (!input.schema) throw new Error("DAR: schema or schemaHash is required");
     const cached = this.schemaCache.get(input.schema);
     if (cached) return cached;

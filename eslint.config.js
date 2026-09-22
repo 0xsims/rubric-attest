@@ -15,6 +15,7 @@ export default tseslint.config(
       ".local/**",
       ".npm/**",
       ".npm-global/**",
+      "audit/**",
     ],
   },
   js.configs.recommended,

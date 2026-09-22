@@ -88,4 +88,27 @@ describe("DAR builder — validation and hashing", () => {
     expect(() => builder.build({ agentId: "A", schema: {}, decision: 5 })).toThrow();
     expect(() => builder.build({ agentId: "A", decision: { n: 1 } })).toThrow(/schema/);
   });
+
+  it("rejects an unknown leafType", () => {
+    const builder = new DarBuilder();
+    // @ts-expect-error leafType must be a LeafType
+    expect(() => builder.build({ agentId: "A", schema: {}, decision: { n: 1 }, leafType: "bogus" })).toThrow(
+      /leafType/,
+    );
+  });
+
+  it("rejects a malformed precomputed schemaHash", () => {
+    const builder = new DarBuilder();
+    // @ts-expect-error schemaHash must match sha3-256:<hex>
+    expect(() => builder.build({ agentId: "A", schemaHash: "not-a-hash", decision: { n: 1 } })).toThrow(
+      /schemaHash/,
+    );
+  });
+
+  it("rejects a decision larger than maxDecisionBytes", () => {
+    const builder = new DarBuilder({ maxDecisionBytes: 100 });
+    expect(() =>
+      builder.build({ agentId: "A", schema: {}, decision: { blob: "x".repeat(1000) } }),
+    ).toThrow(/maxDecisionBytes/);
+  });
 });

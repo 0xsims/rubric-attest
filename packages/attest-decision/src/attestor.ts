@@ -25,6 +25,10 @@ export interface AttestorOptions {
   retryMs?: number;
   /** Max re-send attempts per batch during close() before leaving it spooled. */
   closeRetries?: number;
+  /** Cap on in-memory queued (un-acked) records; oldest are dropped past it. Default 100000. */
+  maxQueue?: number;
+  /** Reject a decision whose canonical form exceeds this many bytes. Default 256 KiB. */
+  maxDecisionBytes?: number;
   now?: () => number;
   newDecisionId?: () => string;
   onError?: (err: unknown) => void;
@@ -48,6 +52,7 @@ export class Attestor {
   private readonly maxWaitMs: number;
   private readonly retryMs: number;
   private readonly closeRetries: number;
+  private readonly maxQueue: number;
   private readonly onError?: (err: unknown) => void;
 
   private queue: QueueItem[] = [];
@@ -57,16 +62,21 @@ export class Attestor {
 
   constructor(options: AttestorOptions) {
     this.transport = options.transport;
-    this.spool = new Spool(options.spoolPath, { maxBytes: options.maxSpoolBytes });
+    this.onError = options.onError;
+    this.spool = new Spool(options.spoolPath, {
+      maxBytes: options.maxSpoolBytes,
+      onDrop: (n) => this.reportError(new Error(`spool dropped ${n} oldest record(s) at the size cap`)),
+    });
     this.builder = new DarBuilder({
       newDecisionId: options.newDecisionId,
       now: options.now,
+      maxDecisionBytes: options.maxDecisionBytes,
     });
     this.maxBatch = options.maxBatch ?? 64;
     this.maxWaitMs = options.maxWaitMs ?? 5000;
     this.retryMs = options.retryMs ?? 1000;
     this.closeRetries = options.closeRetries ?? 3;
-    this.onError = options.onError;
+    this.maxQueue = options.maxQueue ?? 100_000;
 
     if (options.autoRecover !== false) this.recover();
   }
@@ -81,6 +91,12 @@ export class Attestor {
       const dar = this.builder.build(input);
       const seq = this.spool.append(dar);
       this.queue.push({ seq, dar });
+      // Bound in-memory growth under sustained transport failure: drop oldest
+      // queued records past the cap (they are surfaced, not silently lost).
+      while (this.queue.length > this.maxQueue) {
+        this.queue.shift();
+        this.reportError(new Error("attest queue cap exceeded; dropped oldest queued record"));
+      }
       if (this.queue.length >= this.maxBatch) this.scheduleFlush();
       else this.armTimer();
       return dar.decisionId;

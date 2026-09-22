@@ -21,17 +21,24 @@ function serialize(v: unknown): string {
   const t = typeof v;
 
   if (t === "number") {
-    if (!Number.isFinite(v as number)) {
+    const n = v as number;
+    if (!Number.isFinite(n)) {
       throw new JcsError("non-finite number (NaN/Infinity) is not representable");
     }
+    // Spec §3.3: integers beyond the safe range MUST be carried as strings — a
+    // JS number cannot represent them exactly, so we reject rather than hash a
+    // silently-rounded value.
+    if (Number.isInteger(n) && !Number.isSafeInteger(n)) {
+      throw new JcsError(`integer ${n} exceeds Number.MAX_SAFE_INTEGER; carry it as a string (spec §3.3)`);
+    }
     // ES Number::toString === RFC 8785 §3.2.2.3. JSON.stringify(-0) === "0".
-    return JSON.stringify(v);
+    return JSON.stringify(n);
   }
 
   if (t === "boolean") return v ? "true" : "false";
 
   // RFC 8785 §3.2.2.2 escaping is exactly JSON.stringify's minimal escaping.
-  if (t === "string") return JSON.stringify(v);
+  if (t === "string") return escapeString(v as string);
 
   if (t === "bigint") {
     throw new JcsError("bigint is not JSON; carry large integers as strings");
@@ -56,7 +63,7 @@ function serialize(v: unknown): string {
         .map((k) => {
           const val = obj[k];
           rejectNonJson(val, `property '${k}'`);
-          return JSON.stringify(k) + ":" + serialize(val);
+          return escapeString(k) + ":" + serialize(val);
         })
         .join(",") +
       "}"
@@ -82,6 +89,18 @@ function rejectNonJson(value: unknown, where: string): void {
 function serializeElement(el: unknown): string {
   rejectNonJson(el, "array element");
   return serialize(el);
+}
+
+// Unpaired UTF-16 surrogate: a high surrogate not followed by a low, or a low
+// not preceded by a high — i.e. invalid Unicode that RFC 8785 does not admit.
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+
+/** JSON.stringify a string after rejecting invalid Unicode (unpaired surrogates). */
+function escapeString(s: string): string {
+  if (LONE_SURROGATE.test(s)) {
+    throw new JcsError("string contains an unpaired surrogate (invalid Unicode)");
+  }
+  return JSON.stringify(s);
 }
 
 /** Canonicalize a JSON value to its RFC 8785 (JCS) string form. */
