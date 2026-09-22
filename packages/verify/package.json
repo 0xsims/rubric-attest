@@ -1,6 +1,6 @@
 {
   "name": "@rubric/verify",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Rubric decision-verify route: x402 gate, Merkle/anchor/signature verification, chain-check",
   "license": "Apache-2.0",
@@ -25,7 +25,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@rubric/attest-decision": "^0.1.0",
-    "@rubric/attest-index": "^0.1.0"
+    "@rubric/attest-decision": "^1.0.0",
+    "@rubric/attest-index": "^1.0.0"
   }
 }
