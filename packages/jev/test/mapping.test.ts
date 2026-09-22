@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canonicalize } from "@rubric/attest-decision";
+import { canonicalize } from "@0xsims/attest-decision";
 import { StubJevClient, toDecision, type JevDecision } from "../src/index.js";
 
 describe("jev mapping", () => {

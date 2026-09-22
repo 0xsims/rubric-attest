@@ -1,5 +1,5 @@
 /**
- * @rubric/attest-index — SQLite day-shard attestation index (tasks/P2.md).
+ * @0xsims/attest-index — SQLite day-shard attestation index (tasks/P2.md).
  *
  * Writer + query lib over per-day WAL shards, plus a backfill that rebuilds the
  * index from a bundle store. The bundle store is the source of truth; the index

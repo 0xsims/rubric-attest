@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Attestor, hashJson, type DarCore, type Transport } from "@rubric/attest-decision";
+import { Attestor, hashJson, type DarCore, type Transport } from "@0xsims/attest-decision";
 import { StubJevClient, toDecision } from "../src/index.js";
 
 class MockTransport implements Transport {

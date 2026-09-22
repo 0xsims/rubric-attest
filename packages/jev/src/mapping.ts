@@ -5,7 +5,7 @@
  * field names never appear anywhere else in the pipeline. Everything downstream
  * consumes the DAR builder inputs produced by `toDecision()`.
  */
-import type { DarBuildInput, LeafType } from "@rubric/attest-decision";
+import type { DarBuildInput, LeafType } from "@0xsims/attest-decision";
 
 /** Jev's documented decision shape (schema tag "jev.decision/1"). */
 export interface JevDecision {

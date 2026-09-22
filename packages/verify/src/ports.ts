@@ -4,8 +4,8 @@
  * The route depends only on these interfaces, so tests inject in-memory mocks
  * for the index and store ("route tests green on mocked index+store").
  */
-import type { DarCore, HashString } from "@rubric/attest-decision";
-import type { IndexRow } from "@rubric/attest-index";
+import type { DarCore, HashString } from "@0xsims/attest-decision";
+import type { IndexRow } from "@0xsims/attest-index";
 
 export type { IndexRow };
 

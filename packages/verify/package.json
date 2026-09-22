@@ -1,5 +1,5 @@
 {
-  "name": "@rubric/verify",
+  "name": "@0xsims/verify",
   "version": "1.0.0",
   "type": "module",
   "description": "Rubric decision-verify route: x402 gate, Merkle/anchor/signature verification, chain-check",
@@ -26,7 +26,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@rubric/attest-decision": "^1.0.0",
-    "@rubric/attest-index": "^1.0.0"
+    "@0xsims/attest-decision": "^1.0.0",
+    "@0xsims/attest-index": "^1.0.0"
   }
 }
