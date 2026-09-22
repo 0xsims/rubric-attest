@@ -5,7 +5,7 @@
  * field names never appear anywhere else in the pipeline. Everything downstream
  * consumes the DAR builder inputs produced by `toDecision()`.
  */
-import type { DarBuildInput } from "@0xsims/attest-decision";
+import type { DarBuildInput } from "@rubric-protocol/attest-decision";
 
 const JEV_ADAPTER = { name: "jev", version: "1.0.0" } as const;
 

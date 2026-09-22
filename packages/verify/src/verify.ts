@@ -9,7 +9,7 @@
  * that the signing key is trusted. `consistencyVerified` reflects only the
  * former; on-chain anchoring is the job of the (out-of-scope) attestation service.
  */
-import { DAR_VERSION, decisionHashOf, leafHash } from "@0xsims/attest-decision";
+import { DAR_VERSION, decisionHashOf, leafHash } from "@rubric-protocol/attest-decision";
 import { verifyMerkleProof } from "./merkle.js";
 import type { SignatureVerifier, VerifiableBundle, VerificationResult, VerifyStatus } from "./ports.js";
 

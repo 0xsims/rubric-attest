@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { sha3_256 } from "@0xsims/attest-decision";
+import { sha3_256 } from "@rubric-protocol/attest-decision";
 import { assembleVerification } from "../src/index.js";
 import { buildFixture, invalidSignature, makeDars, validSignature } from "./helpers/fixtures.js";
 

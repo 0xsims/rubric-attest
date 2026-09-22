@@ -1,5 +1,5 @@
 {
-  "name": "@0xsims/attest-index",
+  "name": "@rubric-protocol/attest-index",
   "version": "1.0.0",
   "type": "module",
   "description": "Rubric attestation index: SQLite day-shard writer, backfill, query lib",
@@ -29,7 +29,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@0xsims/attest-decision": "^1.0.0",
+    "@rubric-protocol/attest-decision": "^1.0.0",
     "better-sqlite3": "^11.3.0"
   }
 }

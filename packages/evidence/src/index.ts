@@ -1,5 +1,5 @@
 /**
- * @0xsims/evidence — offline evidence export (tasks/P5.md).
+ * @rubric-protocol/evidence — offline evidence export (tasks/P5.md).
  *
  * Assembles a JSON evidence bundle (DARs, proofs, anchor refs, continuity
  * report, schema-change log) plus a plain-text summary, reading the SQLite index

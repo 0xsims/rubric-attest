@@ -1,9 +1,9 @@
 /**
  * Assemble an evidence bundle (tasks/P5.md): DARs + proofs + anchor refs for an
- * agent over a ts range, a continuity report (reusing @0xsims/verify chainCheck,
+ * agent over a ts range, a continuity report (reusing @rubric-protocol/verify chainCheck,
  * so forks render as branches and gaps as gaps), and a schema-change log.
  */
-import { chainCheck } from "@0xsims/verify";
+import { chainCheck } from "@rubric-protocol/verify";
 import type {
   DecisionEvidence,
   EvidenceBundle,

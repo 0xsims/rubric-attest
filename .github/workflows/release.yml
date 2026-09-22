@@ -1,6 +1,6 @@
 name: Release
 
-# Publishes the @0xsims/* packages to npm when a version tag (v*) is pushed.
+# Publishes the @rubric-protocol/* packages to npm when a version tag (v*) is pushed.
 # Requires a repository secret NPM_TOKEN: an npm automation token with publish
 # rights to the @0xsims scope. The token is only ever read by npm on the runner
 # via NODE_AUTH_TOKEN; it is never exposed to logs.

@@ -1,5 +1,5 @@
 {
-  "name": "@0xsims/evidence",
+  "name": "@rubric-protocol/evidence",
   "version": "1.0.0",
   "type": "module",
   "description": "Rubric evidence export CLI: offline evidence bundles from index shards + bundle store",
@@ -29,8 +29,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@0xsims/attest-decision": "^1.0.0",
-    "@0xsims/attest-index": "^1.0.0",
-    "@0xsims/verify": "^1.0.0"
+    "@rubric-protocol/attest-decision": "^1.0.0",
+    "@rubric-protocol/attest-index": "^1.0.0",
+    "@rubric-protocol/verify": "^1.0.0"
   }
 }

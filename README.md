@@ -31,10 +31,10 @@ plan.
 - `attest()` never blocks the caller and never throws into app code; failures
   spool.
 
-## SDK usage (`@0xsims/attest-decision`)
+## SDK usage (`@rubric-protocol/attest-decision`)
 
 ```ts
-import { Attestor, HttpTransport } from "@0xsims/attest-decision";
+import { Attestor, HttpTransport } from "@rubric-protocol/attest-decision";
 
 const attestor = new Attestor({
   transport: new HttpTransport({ baseUrl: "https://attest.example" }), // reads RUBRIC_API_KEY
@@ -94,7 +94,7 @@ npm install       # install workspace deps
 npm run lint      # eslint
 npm run typecheck # tsc --noEmit across all packages
 npm run build     # emit dist JS + .d.ts for each package (consumable output)
-npm run test      # vitest run (resolves @0xsims/* to source via the dev condition)
+npm run test      # vitest run (resolves @rubric-protocol/* to source via the dev condition)
 npm run check     # lint + typecheck + test
 ```
 

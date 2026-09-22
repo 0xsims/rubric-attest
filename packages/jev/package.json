@@ -1,5 +1,5 @@
 {
-  "name": "@0xsims/jev",
+  "name": "@rubric-protocol/jev",
   "version": "1.0.0",
   "type": "module",
   "description": "Rubric adapter: Jev decision shape -> DAR inputs (mapping confined here)",
@@ -26,6 +26,6 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@0xsims/attest-decision": "^1.0.0"
+    "@rubric-protocol/attest-decision": "^1.0.0"
   }
 }

@@ -25,34 +25,34 @@ All notable changes to this project are documented here. The format is based on
 
 - Tag-triggered npm release workflow (`.github/workflows/release.yml`): on a
   `v*` tag it verifies the tag matches the package version, runs lint + typecheck
-  + test + build, and publishes `@0xsims/*` with npm provenance, using an
+  + test + build, and publishes `@rubric-protocol/*` with npm provenance, using an
   `NPM_TOKEN` repository secret.
 
 ## [1.0.0] - 2026-09-22
 
-First stable release, published under the `@0xsims/*` scope. Each package builds
+First stable release, published under the `@rubric-protocol/*` scope. Each package builds
 to a consumable `dist/` (ES modules + `.d.ts`); a `prepublishOnly` hook rebuilds
 `dist` on publish.
 
 ### Added
 
-- **`@0xsims/attest-decision`** — core SDK: JCS (RFC 8785) canonicalization,
+- **`@rubric-protocol/attest-decision`** — core SDK: JCS (RFC 8785) canonicalization,
   SHA3-256 hashing, monotonic-ULID DAR/0.1 builder with per-agent `prev`
   chaining, fire-and-forget `attest()` (sub-millisecond, never throws into app
   code), batcher (64 records / 5000 ms, one POST per flush to
   `/v1/tiered-attest`), and a durable append-only spool (drain on recovery,
   50 MB drop-oldest cap).
-- **`@0xsims/attest-index`** — SQLite day-shard index (WAL): idempotent
+- **`@rubric-protocol/attest-index`** — SQLite day-shard index (WAL): idempotent
   backfill over a bundle store and a query lib (`byDecisionId`, `byAgentRange`,
   `byAgentSchema`, `chainHead`); `rubric-index-backfill` CLI.
-- **`@0xsims/jev`** — Jev decision-shape adapter; all shape knowledge confined
+- **`@rubric-protocol/jev`** — Jev decision-shape adapter; all shape knowledge confined
   to one mapping file.
-- **`@0xsims/schema`** — raw JSON Schema / Zod (via `zod-to-json-schema`)
+- **`@rubric-protocol/schema`** — raw JSON Schema / Zod (via `zod-to-json-schema`)
   adapter producing DAR inputs.
-- **`@0xsims/verify`** — `gate()`-fronted `/v1/x402/decision-verify` route:
+- **`@rubric-protocol/verify`** — `gate()`-fronted `/v1/x402/decision-verify` route:
   Merkle inclusion-proof verification, HCS anchor reference, signature result,
   drift flag, and chain-check continuity (forks rendered as branches).
-- **`@0xsims/evidence`** — `rubric-evidence export` CLI: offline evidence
+- **`@rubric-protocol/evidence`** — `rubric-evidence export` CLI: offline evidence
   bundles (DARs, proofs, anchor refs, continuity report, schema-change log) plus
   a plain-text summary, read directly from the index shards and bundle store.
 - Cross-validation: JCS canonicalization and the full hash pipeline are verified

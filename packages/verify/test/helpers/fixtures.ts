@@ -1,4 +1,4 @@
-import { DarBuilder, leafHash, type DarCore, type HashString } from "@0xsims/attest-decision";
+import { DarBuilder, leafHash, type DarCore, type HashString } from "@rubric-protocol/attest-decision";
 import { buildMerkleTree } from "../../src/merkle.js";
 import type {
   BatchSignature,
