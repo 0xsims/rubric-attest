@@ -15,7 +15,7 @@ const goldenSummary = readFileSync(
 );
 
 function run(args: string[]) {
-  // --conditions=development resolves @0xsims/* workspace deps to TS source
+  // --conditions=development resolves @rubric-protocol/* workspace deps to TS source
   // (matches the dev export condition) so the CLI runs without a prior build.
   return spawnSync(
     process.execPath,

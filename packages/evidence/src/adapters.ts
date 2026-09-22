@@ -4,7 +4,7 @@
  */
 import { readFileSync } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import { Index } from "@0xsims/attest-index";
+import { Index } from "@rubric-protocol/attest-index";
 import type { EvidenceIndex, StorePort, VerifiableBundle } from "./ports.js";
 
 /** Index reader backed by the read-only SQLite day-shards under `indexDir`. */

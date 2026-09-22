@@ -1,9 +1,9 @@
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { decisionHashOf, hashJson, leafHash, type DarCore } from "@0xsims/attest-decision";
-import { backfill } from "@0xsims/attest-index";
-import { buildMerkleTree, type VerifiableBundle } from "@0xsims/verify";
+import { decisionHashOf, hashJson, leafHash, type DarCore } from "@rubric-protocol/attest-decision";
+import { backfill } from "@rubric-protocol/attest-index";
+import { buildMerkleTree, type VerifiableBundle } from "@rubric-protocol/verify";
 
 export interface DarSpec {
   decisionId: string;

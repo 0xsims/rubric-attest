@@ -3,7 +3,7 @@
  * these, so tests inject mocks and the CLI injects real adapters that read the
  * SQLite index shards + bundle-store files offline.
  */
-import type { IndexRow, StorePort, VerifiableBundle, ContinuityReport } from "@0xsims/verify";
+import type { IndexRow, StorePort, VerifiableBundle, ContinuityReport } from "@rubric-protocol/verify";
 
 export type { IndexRow, StorePort, VerifiableBundle, ContinuityReport };
 

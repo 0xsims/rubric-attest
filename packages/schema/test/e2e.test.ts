@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
-import { Attestor, decisionHashOf, hashJson, type DarCore, type Transport } from "@0xsims/attest-decision";
+import { Attestor, decisionHashOf, hashJson, type DarCore, type Transport } from "@rubric-protocol/attest-decision";
 import { toDecision, toDecisionFromZod, zodToSchema } from "../src/index.js";
 
 class MockTransport implements Transport {

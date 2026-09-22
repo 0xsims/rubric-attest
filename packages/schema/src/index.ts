@@ -1,5 +1,5 @@
 /**
- * @0xsims/schema — JSON Schema / Zod adapter (tasks/P3.md).
+ * @rubric-protocol/schema — JSON Schema / Zod adapter (tasks/P3.md).
  *
  * Produces hashes-only DAR builder inputs from a decision's `input`/`output`
  * plus either a raw JSON Schema descriptor or a Zod schema (converted via
@@ -8,7 +8,7 @@
  */
 import { zodToJsonSchema } from "zod-to-json-schema";
 import type { ZodTypeAny } from "zod";
-import type { DarBuildInput, DarMeta } from "@0xsims/attest-decision";
+import type { DarBuildInput, DarMeta } from "@rubric-protocol/attest-decision";
 
 /** A JSON Schema descriptor (plain JSON; JCS-canonicalizable). */
 export type JsonSchema = Record<string, unknown>;

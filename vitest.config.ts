@@ -1,7 +1,7 @@
 import { defineConfig, configDefaults } from "vitest/config";
 
 export default defineConfig({
-  // Resolve @0xsims/* workspace deps to their TS source during tests, not dist.
+  // Resolve @rubric-protocol/* workspace deps to their TS source during tests, not dist.
   resolve: { conditions: ["development"] },
   test: {
     // Fast suite: unit + integration. Heavy perf tests (*.perf.test.ts) run
