@@ -13,6 +13,8 @@ plan.
 | `packages/attest-index` | Attestation index — SQLite day-shard writer (WAL), backfill, and query lib (`byDecisionId`, `byAgentRange`, `byAgentSchema`, `chainHead`) (P2). |
 | `packages/jev` | Adapter — Jev decision shape → DAR inputs; all Jev knowledge confined here (P3). |
 | `packages/schema` | Adapter — JSON Schema / Zod → DAR inputs (P3). |
+| `packages/verify` | x402-gated `/v1/x402/decision-verify` route — Merkle proof, HCS anchor ref, signature, drift flag; chain-check continuity (P4). |
+| `packages/evidence` | `rubric-evidence export` CLI — offline evidence bundles (DARs, proofs, anchors, continuity, schema-change log) from index shards + store (P5). |
 | `tasks/` | Phase definitions `P0`–`P5`. |
 | `.github/workflows/ci.yml` | Install + lint + typecheck + test, on every PR. |
 

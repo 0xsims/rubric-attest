@@ -1,0 +1,172 @@
+{
+  "version": "rubric-evidence/0.1",
+  "agent": "agent://jev/pricing",
+  "range": {
+    "from": "2025-09-22T00:00:00.000Z",
+    "to": "2025-09-22T23:59:59.999Z"
+  },
+  "generatedAt": "2025-09-22T12:00:00.000Z",
+  "decisionCount": 3,
+  "decisions": [
+    {
+      "attestationId": "att-01J8Z9Q0000000000000000001",
+      "dar": {
+        "v": "DAR/0.1",
+        "decisionId": "01J8Z9Q0000000000000000001",
+        "agentId": "agent://jev/pricing",
+        "ts": "2025-09-22T00:00:01.000Z",
+        "prev": null,
+        "leafType": "decision",
+        "schemaHash": "sha3-256:9a4220d93e5baed9e6ecf285048446dd0f779ade439bc21abbd060035d0cffcb",
+        "decisionHash": "sha3-256:bdca5fcf479e1de01280e8e1836c0ed7d4bfb9108f24a065b5c95c667603e190",
+        "decision": {
+          "action": "approve",
+          "n": 1
+        }
+      },
+      "merkleProof": {
+        "leaf": "sha3-256:1a2ccf22796fdc4992832d272576da444f4fb06bc66ab1facc23ee8f7d1bc9f6",
+        "steps": [
+          {
+            "sibling": "sha3-256:955327bee5dc152d7461a9dbd0fbb6a1d6a19b0ea836f28db8cf59907d4a9c44",
+            "position": "right"
+          },
+          {
+            "sibling": "sha3-256:a2f218db50e3a499da15b4bd6ee9fc27e1a140494b335ee715ce784fd8b7e1a9",
+            "position": "right"
+          }
+        ],
+        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+      },
+      "anchorRef": {
+        "network": "hedera-testnet",
+        "topicId": "0.0.1234",
+        "sequenceNumber": 1,
+        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921",
+        "consensusTimestamp": "2025-09-22T00:00:00.000Z"
+      },
+      "signature": {
+        "alg": "ed25519",
+        "keyRef": "key-1",
+        "signature": "sig-01J8Z9Q0000000000000000001",
+        "over": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+      }
+    },
+    {
+      "attestationId": "att-01J8Z9Q0000000000000000002",
+      "dar": {
+        "v": "DAR/0.1",
+        "decisionId": "01J8Z9Q0000000000000000002",
+        "agentId": "agent://jev/pricing",
+        "ts": "2025-09-22T00:00:02.000Z",
+        "prev": "01J8Z9Q0000000000000000001",
+        "leafType": "decision",
+        "schemaHash": "sha3-256:9a4220d93e5baed9e6ecf285048446dd0f779ade439bc21abbd060035d0cffcb",
+        "decisionHash": "sha3-256:517cde9a0aab5a0fec6ef2b5d7bc7dcb800c52b842b3de25d3e12d15455023ee",
+        "decision": {
+          "action": "approve",
+          "n": 2
+        }
+      },
+      "merkleProof": {
+        "leaf": "sha3-256:955327bee5dc152d7461a9dbd0fbb6a1d6a19b0ea836f28db8cf59907d4a9c44",
+        "steps": [
+          {
+            "sibling": "sha3-256:1a2ccf22796fdc4992832d272576da444f4fb06bc66ab1facc23ee8f7d1bc9f6",
+            "position": "left"
+          },
+          {
+            "sibling": "sha3-256:a2f218db50e3a499da15b4bd6ee9fc27e1a140494b335ee715ce784fd8b7e1a9",
+            "position": "right"
+          }
+        ],
+        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+      },
+      "anchorRef": {
+        "network": "hedera-testnet",
+        "topicId": "0.0.1234",
+        "sequenceNumber": 2,
+        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921",
+        "consensusTimestamp": "2025-09-22T00:00:00.000Z"
+      },
+      "signature": {
+        "alg": "ed25519",
+        "keyRef": "key-1",
+        "signature": "sig-01J8Z9Q0000000000000000002",
+        "over": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+      }
+    },
+    {
+      "attestationId": "att-01J8Z9Q0000000000000000003",
+      "dar": {
+        "v": "DAR/0.1",
+        "decisionId": "01J8Z9Q0000000000000000003",
+        "agentId": "agent://jev/pricing",
+        "ts": "2025-09-22T00:00:03.000Z",
+        "prev": "01J8Z9Q0000000000000000002",
+        "leafType": "decision",
+        "schemaHash": "sha3-256:395150d4c6b042521533513477de14b44854d48fe16a58813c47978330b3e98e",
+        "decisionHash": "sha3-256:5a56ce6dc70c12cba5a205783cfc7d3427a805f580c5101840c38c612bb93a45",
+        "decision": {
+          "action": "deny",
+          "n": 3
+        }
+      },
+      "merkleProof": {
+        "leaf": "sha3-256:297f9c79418ab5ff063c996085c2a298917889e9954bf2dbeb4168e887c642e8",
+        "steps": [
+          {
+            "sibling": "sha3-256:297f9c79418ab5ff063c996085c2a298917889e9954bf2dbeb4168e887c642e8",
+            "position": "right"
+          },
+          {
+            "sibling": "sha3-256:52675095ea8e41b453b857c9eb1903f093b576f48b27bffbc8bd0b35e5342586",
+            "position": "left"
+          }
+        ],
+        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+      },
+      "anchorRef": {
+        "network": "hedera-testnet",
+        "topicId": "0.0.1234",
+        "sequenceNumber": 3,
+        "root": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921",
+        "consensusTimestamp": "2025-09-22T00:00:00.000Z"
+      },
+      "signature": {
+        "alg": "ed25519",
+        "keyRef": "key-1",
+        "signature": "sig-01J8Z9Q0000000000000000003",
+        "over": "sha3-256:d31609f26f194667b7273edbe4f527cc3d5c19ef536291b37057e23639435921"
+      }
+    }
+  ],
+  "continuity": {
+    "agentId": "agent://jev/pricing",
+    "count": 3,
+    "genesis": [
+      "01J8Z9Q0000000000000000001"
+    ],
+    "heads": [
+      "01J8Z9Q0000000000000000003"
+    ],
+    "branches": [],
+    "gaps": [],
+    "linear": true,
+    "tampering": false
+  },
+  "schemaChangeLog": [
+    {
+      "schemaHash": "sha3-256:9a4220d93e5baed9e6ecf285048446dd0f779ade439bc21abbd060035d0cffcb",
+      "fromDecisionId": "01J8Z9Q0000000000000000001",
+      "fromTs": "2025-09-22T00:00:01.000Z",
+      "count": 2
+    },
+    {
+      "schemaHash": "sha3-256:395150d4c6b042521533513477de14b44854d48fe16a58813c47978330b3e98e",
+      "fromDecisionId": "01J8Z9Q0000000000000000003",
+      "fromTs": "2025-09-22T00:00:03.000Z",
+      "count": 1
+    }
+  ]
+}

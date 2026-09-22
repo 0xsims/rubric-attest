@@ -1,0 +1,16 @@
+Rubric Decision Evidence
+  version:   rubric-evidence/0.1
+  agent:     agent://jev/pricing
+  range:     2025-09-22T00:00:00.000Z .. 2025-09-22T23:59:59.999Z
+  generated: 2025-09-22T12:00:00.000Z
+  decisions: 3
+
+Continuity: linear (tampering: false)
+  genesis: 01J8Z9Q0000000000000000001
+  heads:   01J8Z9Q0000000000000000003
+
+Schema epochs: 2
+  sha3-256:9a4220d93e5baed9e6ecf285048446dd0f779ade439bc21abbd060035d0cffcb from 01J8Z9Q0000000000000000001 @ 2025-09-22T00:00:01.000Z (2 decision(s))
+  sha3-256:395150d4c6b042521533513477de14b44854d48fe16a58813c47978330b3e98e from 01J8Z9Q0000000000000000003 @ 2025-09-22T00:00:03.000Z (1 decision(s))
+
+Anchors: hedera-testnet:0.0.1234
