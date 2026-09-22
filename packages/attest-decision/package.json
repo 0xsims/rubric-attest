@@ -21,6 +21,7 @@
   "files": ["dist", "src"],
   "publishConfig": { "access": "public" },
   "scripts": {
+    "prepublishOnly": "npm run build",
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run"
   }
