@@ -1,0 +1,23 @@
+{
+  "name": "@rubric/evidence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Rubric evidence export CLI: offline evidence bundles from index shards + bundle store",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "rubric-evidence": "./src/cli.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@rubric/attest-decision": "*",
+    "@rubric/attest-index": "*",
+    "@rubric/verify": "*"
+  }
+}
