@@ -75,7 +75,8 @@ describe("decision-verify route (mocked index + store)", () => {
     expect(res.status).toBe(200);
     const body = res.body as VerificationResult & { extensions: { bazaar: { settled: boolean } } };
     expect(body.decisionId).toBe(dars[0]!.decisionId);
-    expect(body.verified).toBe(true);
+    expect(body.status).toBe("ok");
+    expect(body.consistencyVerified).toBe(true);
     expect(body.drift).toBe(false);
     expect(body.merkleProof.steps.length).toBeGreaterThan(0);
     expect(body.anchorRef.network).toBe("hedera-testnet");

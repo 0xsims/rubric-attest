@@ -62,11 +62,11 @@ describe("decision-verify over real HTTP", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("x-payment-response")).toBeTruthy();
     const body = (await res.json()) as {
-      verified: boolean;
+      consistencyVerified: boolean;
       drift: boolean;
       extensions: { bazaar: { settled: boolean } };
     };
-    expect(body.verified).toBe(true);
+    expect(body.consistencyVerified).toBe(true);
     expect(body.drift).toBe(false);
     expect(body.extensions.bazaar.settled).toBe(true);
   });

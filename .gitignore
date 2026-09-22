@@ -34,3 +34,5 @@ npm-debug.log*
 /npm
 /npx
 u.txt
+audit/
+.gitconfig

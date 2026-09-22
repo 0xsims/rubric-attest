@@ -23,19 +23,35 @@ describe("JCS canonicalization (RFC 8785)", () => {
     expect(canonicalize({ a: 1, b: 2 })).toBe(canonicalize({ b: 2, a: 1 }));
   });
 
-  it("serializes RFC 8785 number stress values like ES Number::toString", () => {
+  it("serializes spec-valid number stress values like ES Number::toString", () => {
     expect(
       canonicalize({
-        a: 9.999999999999997e22,
-        b: 5e-324, // min subnormal double
-        c: 1e21, // exponential-notation boundary
-        d: 9007199254740992, // 2^53
-        e: 1.7976931348623157e308, // max double
+        a: 5e-324, // min subnormal double (non-integer)
+        b: 0.1 + 0.2, // 0.30000000000000004
+        c: 9007199254740991, // MAX_SAFE_INTEGER
+        d: -9007199254740991,
+        e: 1.5e-300,
         f: -0, // -> "0"
       }),
     ).toBe(
-      '{"a":9.999999999999997e+22,"b":5e-324,"c":1e+21,"d":9007199254740992,"e":1.7976931348623157e+308,"f":0}',
+      '{"a":5e-324,"b":0.30000000000000004,"c":9007199254740991,"d":-9007199254740991,"e":1.5e-300,"f":0}',
     );
+  });
+
+  it("rejects integers beyond MAX_SAFE_INTEGER (spec §3.3 — carry as strings)", () => {
+    expect(() => canonicalize({ n: 9007199254740992 })).toThrow(JcsError); // 2^53
+    expect(() => canonicalize({ n: 1e21 })).toThrow(JcsError);
+    expect(() => canonicalize({ n: 1.7976931348623157e308 })).toThrow(JcsError); // integer-valued
+    // Non-integer floats of any magnitude are fine.
+    expect(canonicalize({ n: 5e-324 })).toBe('{"n":5e-324}');
+  });
+
+  it("rejects unpaired surrogates (invalid Unicode)", () => {
+    expect(() => canonicalize({ s: "\ud83d" })).toThrow(JcsError); // lone high surrogate
+    expect(() => canonicalize({ s: "\ude00" })).toThrow(JcsError); // lone low surrogate
+    expect(() => canonicalize({ ["\ud83d"]: 1 })).toThrow(JcsError); // in a key too
+    // A valid surrogate pair (emoji) is accepted.
+    expect(canonicalize({ s: "😀" })).toBe('{"s":"😀"}');
   });
 
   it("sorts object keys by UTF-16 code unit including surrogate pairs", () => {

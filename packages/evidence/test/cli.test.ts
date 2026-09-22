@@ -15,7 +15,13 @@ const goldenSummary = readFileSync(
 );
 
 function run(args: string[]) {
-  return spawnSync(process.execPath, ["--import", "tsx", cliPath, ...args], { encoding: "utf8" });
+  // --conditions=development resolves @rubric/* workspace deps to TS source
+  // (matches the dev export condition) so the CLI runs without a prior build.
+  return spawnSync(
+    process.execPath,
+    ["--conditions=development", "--import", "tsx", cliPath, ...args],
+    { encoding: "utf8" },
+  );
 }
 
 let fx: StoreFixture | undefined;

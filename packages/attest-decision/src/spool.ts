@@ -20,12 +20,13 @@ import {
   fstatSync,
   fsyncSync,
   ftruncateSync,
+  mkdirSync,
   openSync,
   readFileSync,
   renameSync,
-  writeFileSync,
   writeSync,
 } from "node:fs";
+import { dirname } from "node:path";
 import type { DarCore } from "./constants.js";
 
 const DEFAULT_MAX_BYTES = 50 * 1024 * 1024; // 50 MB (tasks/P1.md)
@@ -37,12 +38,45 @@ export interface SpoolRecord {
 
 export interface SpoolOptions {
   maxBytes?: number;
+  /** Called when the drop-oldest cap policy discards records (data loss). */
+  onDrop?: (count: number) => void;
+}
+
+/** Write an entire buffer, looping over short writes (write(2) may be partial). */
+function writeFully(fd: number, buf: Buffer): void {
+  let offset = 0;
+  while (offset < buf.length) {
+    offset += writeSync(fd, buf, offset, buf.length - offset);
+  }
+}
+
+/** Durably write a small file (write + fsync). */
+function writeFileDurable(path: string, contents: string): void {
+  const fd = openSync(path, "w");
+  try {
+    writeFully(fd, Buffer.from(contents, "utf8"));
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+/** fsync a directory so a rename/create within it is durable. */
+function fsyncDir(path: string): void {
+  const fd = openSync(path, "r");
+  try {
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
 }
 
 export class Spool {
   private readonly path: string;
+  private readonly dir: string;
   private readonly ackPath: string;
   private readonly maxBytes: number;
+  private readonly onDrop?: (count: number) => void;
 
   private fd: number;
   private seq = 0;
@@ -54,8 +88,13 @@ export class Spool {
 
   constructor(path: string, options: SpoolOptions = {}) {
     this.path = path;
+    this.dir = dirname(path);
     this.ackPath = `${path}.ack`;
     this.maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
+    this.onDrop = options.onDrop;
+    // Create the spool directory if missing so a documented path like
+    // /var/lib/rubric/attest.spool works without a separate mkdir.
+    mkdirSync(this.dir, { recursive: true });
     this.ackedThrough = this.readAck();
     this.recover();
     // Open the append fd after recovery has read the current contents.
@@ -88,7 +127,7 @@ export class Spool {
     const record: SpoolRecord = { seq, dar };
     const line = JSON.stringify(record) + "\n";
     const buf = Buffer.from(line, "utf8");
-    writeSync(this.fd, buf);
+    writeFully(this.fd, buf); // loop over short writes so a line is never torn
     this.bytes += buf.byteLength;
     this.pendingRecords.push(record);
     if (this.bytes > this.maxBytes) this.compactionPending = true;
@@ -162,23 +201,26 @@ export class Spool {
     // Drop oldest pending until the surviving set fits under the cap.
     const kept = this.pendingRecords.slice();
     let size = kept.reduce((n, r) => n + Buffer.byteLength(JSON.stringify(r) + "\n"), 0);
+    let droppedNow = 0;
     while (size > this.maxBytes && kept.length > 0) {
       const dropped = kept.shift()!;
       size -= Buffer.byteLength(JSON.stringify(dropped) + "\n");
       this.droppedForCap++;
+      droppedNow++;
     }
 
     const tmp = `${this.path}.compact`;
     const body = kept.map((r) => JSON.stringify(r) + "\n").join("");
-    writeFileSync(tmp, body);
-    const tfd = openSync(tmp, "r+");
-    fsyncSync(tfd);
-    closeSync(tfd);
+    writeFileDurable(tmp, body);
     closeSync(this.fd);
     renameSync(tmp, this.path);
+    fsyncDir(this.dir); // make the rename durable across a power loss
     this.fd = openSync(this.path, "a");
     this.bytes = fstatSync(this.fd).size;
     this.pendingRecords = kept;
+
+    // Surface the drop-oldest data loss rather than discarding silently.
+    if (droppedNow > 0) this.onDrop?.(droppedNow);
   }
 
   private readAck(): number {
@@ -191,7 +233,9 @@ export class Spool {
   }
 
   private writeAck(): void {
-    writeFileSync(this.ackPath, String(this.ackedThrough));
+    // fsync the watermark so a crash cannot resurrect already-acked records
+    // (bounding duplicate re-delivery on recovery).
+    writeFileDurable(this.ackPath, String(this.ackedThrough));
   }
 }
 

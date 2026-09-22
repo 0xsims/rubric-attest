@@ -102,6 +102,24 @@ describe("Spool", () => {
     s2.close();
   });
 
+  it("surfaces cap drops via the onDrop callback", () => {
+    let dropped = 0;
+    const s = new Spool(path, { maxBytes: 400, onDrop: (n) => (dropped += n) });
+    for (let i = 1; i <= 30; i++) s.append(dar(i));
+    s.compactIfNeeded();
+    expect(dropped).toBe(s.droppedCount());
+    expect(dropped).toBeGreaterThan(0);
+    s.close();
+  });
+
+  it("creates the spool parent directory if it does not exist", () => {
+    const nested = join(dir, "a", "b", "c", "attest.spool");
+    const s = new Spool(nested);
+    s.append(dar(1));
+    expect(s.pending().length).toBe(1);
+    s.close();
+  });
+
   it("creates an ack sidecar and no leftover temp files", () => {
     const s = new Spool(path);
     s.append(dar(1));
