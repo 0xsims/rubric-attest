@@ -1,0 +1,19 @@
+{
+  "name": "@rubric/verify",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Rubric decision-verify route: x402 gate, Merkle/anchor/signature verification, chain-check",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@rubric/attest-decision": "*",
+    "@rubric/attest-index": "*"
+  }
+}
