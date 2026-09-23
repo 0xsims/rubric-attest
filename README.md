@@ -1,10 +1,33 @@
 # Rubric Decision Attestation
 
+**Attesting an AI agent's decisions is free. Verifying one costs $0.10.**
+
+Every audit-trail product prices the write, so teams attest selectively - and a
+trail with gaps proves nothing. This inverts it: attestation writes cost nothing,
+forever, and what costs money is doubt. Anyone can verify any record for $0.10,
+machine-to-machine over [x402](https://www.x402.org/), no account.
+
+What a record is: hash commitments only (SHA3-256 over JCS) - the decision
+payload never leaves your client by default. Records chain per agent, carry
+Merkle proofs, are signed by a threshold of ML-DSA-65 (post-quantum) keys across
+regions, and are anchored to Hedera mainnet minutes after the decision. Once
+anchored, nobody can backdate or revise a record. Including us.
+
+Live verify endpoint (returns its price and shape to a plain GET):
+`curl https://rubric-protocol.com/v1/x402/decision-verify`
+
+Honest limits, current state: the signing federation is three regions today, all
+operated by Rubric - independent operators are the roadmap, so today the
+threshold protects against key compromise, not against the operator as an
+institution. The verify response covers internal consistency plus the on-ledger
+anchor ref; linking the anchor to a specific record is a documented hash-bridge
+walk. Details in [`spec/dar-0.1.md`](./spec/dar-0.1.md).
+
+---
+
 [![CI](https://github.com/0xsims/rubric-attest/actions/workflows/ci.yml/badge.svg)](https://github.com/0xsims/rubric-attest/actions/workflows/ci.yml)
 
-Monorepo for the Rubric Decision Attestation system. See [`CLAUDE.md`](./CLAUDE.md)
-for the build constitution (invariants) and [`tasks/`](./tasks) for the phased
-plan.
+Monorepo for the Rubric Decision Attestation system.
 
 ## Layout
 
@@ -17,11 +40,10 @@ plan.
 | `packages/schema` | Adapter — JSON Schema / Zod → DAR inputs (P3). |
 | `packages/verify` | x402-gated `/v1/x402/decision-verify` route — Merkle proof, HCS anchor ref, signature, drift flag; chain-check continuity (P4). |
 | `packages/evidence` | `rubric-evidence export` CLI — offline evidence bundles (DARs, proofs, anchors, continuity, schema-change log) from index shards + store (P5). |
-| `tasks/` | Phase definitions `P0`–`P5`. |
 | `.github/workflows/ci.yml` | Install + lint + typecheck + build + test, on every PR. |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Release history (Keep a Changelog). |
 
-## Invariants (see `CLAUDE.md`)
+## Invariants
 
 - **Hashing** SHA3-256 everywhere. **Canonicalization** JCS (RFC 8785).
   Canonicalize, then hash.
