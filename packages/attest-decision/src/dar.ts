@@ -70,7 +70,12 @@ export class DarBuilder {
     this.maxDecisionBytes = deps.maxDecisionBytes ?? DEFAULT_MAX_DECISION_BYTES;
   }
 
-  build(input: DarBuildInput): DarCore {
+  /**
+   * Build a DAR core. `options.prev`, when given (including `null`), is used as
+   * `prev` instead of this builder's in-memory head for the agent; the Attestor
+   * passes it when a shared chain-head store is configured.
+   */
+  build(input: DarBuildInput, options?: { prev?: string | null }): DarCore {
     const { agentId } = input;
     if (typeof agentId !== "string" || agentId.length === 0) {
       throw new Error("DAR: agentId must be a non-empty string");
@@ -95,7 +100,7 @@ export class DarBuilder {
     const decisionHash = decisionHashOf(schemaHash, inputHash, outputHash);
 
     const decisionId = this.newDecisionId();
-    const prev = this.heads.get(agentId) ?? null;
+    const prev = options?.prev !== undefined ? options.prev : (this.heads.get(agentId) ?? null);
     const ts = new Date(this.now()).toISOString();
 
     const dar: DarCore = {

@@ -10,6 +10,47 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-23
+
+### Added
+
+- **`@rubric-protocol/attest-decision`: shared chain-head store (`chainStore`).**
+  New optional `AttestorOptions.chainStore` takes a `ChainHeadStore`. With a store
+  configured, the Attestor reads each record's `prev` from the store and writes
+  the new head back, under a per-agent lock held across build, spool and head
+  write. Several processes (pm2 workers) and restarts then extend **one linear
+  chain per `agentId`**, rather than one chain per process and a new genesis on
+  each restart. `prev` semantics are unchanged (spec/dar-0.1.md §2).
+- `FileChainHeadStore`: a one-host, multi-process implementation using a directory
+  with one `<sha3-256(agentId)>.head` file per agent (atomic tmp+fsync+rename) and
+  an O_EXCL `.lock` file. A lock whose pid is dead, or that is older than
+  `staleLockMs` (10 s), is broken.
+- `DarBuilder.build(input, { prev })`: an optional explicit `prev`.
+
+### Behavior with a store
+
+- **Fallback on contention or store failure: skip, never fork.** If the lock isn't
+  acquired within `lockTimeoutMs` (250 ms), or the head file can't be read or
+  written, `attest()` returns `null`, spools nothing, and reports a
+  `ChainHeadStoreError` (`code: "lock-timeout" | "io"`) to `onError`. It still
+  never throws. A corrupt head file fails closed the same way; it never restarts
+  the chain at a new genesis.
+- An empty store is seeded from this process's own head (its spool-recovered or
+  earlier record) and otherwise starts at genesis.
+- On recovery, if the store head still equals the last spooled record's `prev`
+  (a crash between spool append and head write), the head is moved forward to
+  that record.
+- `attest()` costs a lock plus an fsync'd head write, so it is no longer under
+  1 ms. This is intended for low-traffic routes.
+- Known limit: if a lock holder stalls inside its critical section for longer than
+  `staleLockMs`, its lock can be broken and a fork is possible.
+
+### Unchanged
+
+- With no `chainStore`, output is byte-identical to 1.0.1 (tested against
+  `DarBuilder` directly).
+- All six packages bumped to 1.1.0 for a uniform `--workspaces` publish.
+
 ## [1.0.1] - 2026-09-23
 
 ### Fixed / release
