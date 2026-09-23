@@ -10,10 +10,19 @@
  * batch is acked in the spool; a failed batch is returned to the front of the
  * queue and retried, so it is never lost. On construction the spool is drained:
  * anything left by a previous run is re-queued and per-agent chain heads reseeded.
+ *
+ * Chain heads are per process unless `chainStore` is set. With a store, each
+ * record's `prev` is read from, and its decisionId written back to, the shared
+ * store under a per-agent lock (see chain-store.ts), so several processes and
+ * restarts extend one linear chain per agent. If the store can't be used (lock
+ * timeout, I/O error), the record is skipped: attest() returns null and the
+ * error goes to `onError`. Skipping, rather than falling back to the local head,
+ * is deliberate: a local fallback would fork the chain.
  */
+import type { ChainHeadStore } from "./chain-store.js";
 import type { DarCore, PayloadRecord, TransmitMode } from "./constants.js";
 import { DarBuilder, toPayload, type DarBuildInput } from "./dar.js";
-import { Spool } from "./spool.js";
+import { Spool, type SpoolRecord } from "./spool.js";
 import type { Transport } from "./transport.js";
 
 export interface AttestorOptions {
@@ -36,6 +45,13 @@ export interface AttestorOptions {
   onError?: (err: unknown) => void;
   /** Replay leftover spool records on construction. Default true. */
   autoRecover?: boolean;
+  /**
+   * Shared per-agent chain-head store. When set, `prev` comes from the store
+   * rather than this process's memory, and attest() takes a per-agent lock (so
+   * it costs a lock plus a head write, not <1 ms). A record the store can't
+   * serve is skipped (attest() returns null). Default: none, in-memory heads.
+   */
+  chainStore?: ChainHeadStore;
 }
 
 interface QueueItem {
@@ -58,6 +74,7 @@ export class Attestor {
   private readonly maxQueue: number;
   private readonly mode: TransmitMode;
   private readonly onError?: (err: unknown) => void;
+  private readonly chainStore?: ChainHeadStore;
 
   private queue: QueueItem[] = [];
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -82,6 +99,7 @@ export class Attestor {
     this.closeRetries = options.closeRetries ?? 3;
     this.maxQueue = options.maxQueue ?? 100_000;
     this.mode = options.mode ?? "hash-only";
+    this.chainStore = options.chainStore;
 
     if (options.autoRecover !== false) this.recover();
   }
@@ -92,19 +110,10 @@ export class Attestor {
    */
   attest(input: DarBuildInput): string | null {
     if (this.closed) return null;
+    if (this.chainStore) return this.attestChained(this.chainStore, input);
     try {
       const dar = this.builder.build(input);
-      const payload = this.mode === "payload" ? toPayload(dar.decisionId, input) : undefined;
-      const seq = this.spool.append(dar, payload);
-      this.queue.push({ seq, dar, payload });
-      // Bound in-memory growth under sustained transport failure: drop oldest
-      // queued records past the cap (they are surfaced, not silently lost).
-      while (this.queue.length > this.maxQueue) {
-        this.queue.shift();
-        this.reportError(new Error("attest queue cap exceeded; dropped oldest queued record"));
-      }
-      if (this.queue.length >= this.maxBatch) this.scheduleFlush();
-      else this.armTimer();
+      this.enqueue(dar, input);
       return dar.decisionId;
     } catch (err) {
       this.reportError(err);
@@ -185,6 +194,67 @@ export class Attestor {
 
   // --- internals ---
 
+  /** Spool and queue a built record, then arm the batcher. Throws if the spool append fails. */
+  private enqueue(dar: DarCore, input: DarBuildInput): void {
+    const payload = this.mode === "payload" ? toPayload(dar.decisionId, input) : undefined;
+    const seq = this.spool.append(dar, payload);
+    this.queue.push({ seq, dar, payload });
+    // Bound in-memory growth under sustained transport failure: drop oldest
+    // queued records past the cap (they are surfaced, not silently lost).
+    while (this.queue.length > this.maxQueue) {
+      this.queue.shift();
+      this.reportError(new Error("attest queue cap exceeded; dropped oldest queued record"));
+    }
+    if (this.queue.length >= this.maxBatch) this.scheduleFlush();
+    else this.armTimer();
+  }
+
+  /**
+   * attest() with a shared chain-head store: build, spool and advance the head
+   * as one per-agent critical section. `prev` is the stored head; only when the
+   * store has no head for the agent yet does it fall back to this process's own
+   * head (from spool recovery or an earlier record), else genesis.
+   */
+  private attestChained(store: ChainHeadStore, input: DarBuildInput): string | null {
+    let accepted: string | null = null;
+    try {
+      const { agentId } = input;
+      if (typeof agentId !== "string" || agentId.length === 0) {
+        throw new Error("DAR: agentId must be a non-empty string");
+      }
+      store.advance(agentId, (head) => {
+        const prev = head ?? this.builder.getHead(agentId) ?? null;
+        const dar = this.builder.build(input, { prev });
+        this.enqueue(dar, input);
+        accepted = dar.decisionId;
+        return dar.decisionId;
+      });
+    } catch (err) {
+      // If the record was already spooled (the head write failed after it), it
+      // is still delivered, so its id is still returned.
+      this.reportError(err);
+    }
+    return accepted;
+  }
+
+  /**
+   * After a crash between a record's spool append and its head write, the store
+   * still points at that record's `prev`. Re-point it at the record, per agent,
+   * using the last recovered record, but only if nothing has extended the head
+   * since (or the store has no head yet).
+   */
+  private repairHeads(store: ChainHeadStore, pending: SpoolRecord[]): void {
+    const last = new Map<string, DarCore>();
+    for (const { dar } of pending) last.set(dar.agentId, dar);
+    for (const dar of last.values()) {
+      try {
+        store.advance(dar.agentId, (head) => (head === null || head === dar.prev ? dar.decisionId : null));
+      } catch (err) {
+        this.reportError(err);
+      }
+    }
+  }
+
   /** Raw payloads for a batch — only in `payload` mode; ride in the envelope. */
   private payloadsOf(batch: QueueItem[]): PayloadRecord[] | undefined {
     if (this.mode !== "payload") return undefined;
@@ -197,6 +267,7 @@ export class Attestor {
   private recover(): void {
     const pending = this.spool.pending();
     for (const { dar } of pending) this.builder.seedHead(dar.agentId, dar.decisionId);
+    if (this.chainStore) this.repairHeads(this.chainStore, pending);
     for (const item of pending) this.queue.push(item);
     if (this.queue.length > 0) this.scheduleFlush();
   }

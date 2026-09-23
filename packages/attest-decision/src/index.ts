@@ -40,3 +40,10 @@ export {
   type HttpTransportOptions,
 } from "./transport.js";
 export { Attestor, type AttestorOptions } from "./attestor.js";
+export {
+  FileChainHeadStore,
+  ChainHeadStoreError,
+  type ChainHeadStore,
+  type ChainHeadStoreErrorCode,
+  type FileChainHeadStoreOptions,
+} from "./chain-store.js";
