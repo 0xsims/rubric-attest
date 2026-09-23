@@ -1,0 +1,46 @@
+name: Deprecate
+
+# Manually-triggered: deprecate a given version of the @rubric-protocol/* packages
+# on npm, using NPM_TOKEN (read only by npm on the runner, never logged).
+# Skips any package that does not have the requested version.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to deprecate (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+      message:
+        description: "Deprecation message"
+        required: true
+        default: "1.0.0 was a partial release; use 1.0.1 (npm i @rubric-protocol/<pkg>@latest)."
+
+permissions:
+  contents: read
+
+jobs:
+  deprecate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+      - name: Deprecate ${{ inputs.version }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          MESSAGE: ${{ inputs.message }}
+        run: |
+          set -euo pipefail
+          for pkg in attest-decision attest-index jev schema decision-verify evidence; do
+            spec="@rubric-protocol/${pkg}@${VERSION}"
+            if npm view "$spec" version >/dev/null 2>&1; then
+              echo "::group::Deprecating $spec"
+              npm deprecate "$spec" "$MESSAGE"
+              echo "::endgroup::"
+            else
+              echo "Skip $spec (version not published)"
+            fi
+          done
