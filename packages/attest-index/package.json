@@ -30,6 +30,6 @@
   },
   "dependencies": {
     "@rubric-protocol/attest-decision": "^1.0.1",
-    "better-sqlite3": "^11.3.0"
+    "better-sqlite3": "^13.0.3"
   }
 }
