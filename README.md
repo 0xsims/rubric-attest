@@ -27,9 +27,7 @@ walk. Details in [`spec/dar-0.1.md`](./spec/dar-0.1.md).
 
 [![CI](https://github.com/0xsims/rubric-attest/actions/workflows/ci.yml/badge.svg)](https://github.com/0xsims/rubric-attest/actions/workflows/ci.yml)
 
-Monorepo for the Rubric Decision Attestation system. See [`CLAUDE.md`](./CLAUDE.md)
-for the build constitution (invariants) and [`tasks/`](./tasks) for the phased
-plan.
+Monorepo for the Rubric Decision Attestation system.
 
 ## Layout
 
@@ -42,11 +40,10 @@ plan.
 | `packages/schema` | Adapter — JSON Schema / Zod → DAR inputs (P3). |
 | `packages/verify` | x402-gated `/v1/x402/decision-verify` route — Merkle proof, HCS anchor ref, signature, drift flag; chain-check continuity (P4). |
 | `packages/evidence` | `rubric-evidence export` CLI — offline evidence bundles (DARs, proofs, anchors, continuity, schema-change log) from index shards + store (P5). |
-| `tasks/` | Phase definitions `P0`–`P5`. |
 | `.github/workflows/ci.yml` | Install + lint + typecheck + build + test, on every PR. |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Release history (Keep a Changelog). |
 
-## Invariants (see `CLAUDE.md`)
+## Invariants
 
 - **Hashing** SHA3-256 everywhere. **Canonicalization** JCS (RFC 8785).
   Canonicalize, then hash.
