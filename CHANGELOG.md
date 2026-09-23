@@ -10,7 +10,23 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
-### Changed (breaking, pre-release — DAR/0.1 preimage)
+## [1.0.1] - 2026-09-23
+
+### Fixed / release
+
+- **1.0.0 was a partial release.** The `v1.0.0` tag published five packages
+  (`attest-decision`, `attest-index`, `jev`, `schema`, `evidence`), but
+  `@rubric-protocol/verify` collided with a pre-existing, unrelated npm package
+  (a different `2.3.1` lineage), so this repo's verify package did not publish and
+  `evidence@1.0.0` shipped with an unsatisfiable `verify` dependency.
+- **Renamed** this repo's verify package to `@rubric-protocol/decision-verify`
+  (the `@rubric-protocol/verify` name is taken). Imports, inter-dep ranges, and
+  docs updated.
+- **Bumped all six packages to 1.0.1** for a clean, uniform republish (the 1.0.0
+  versions are burned on npm). `evidence@1.0.1` depends on
+  `@rubric-protocol/decision-verify@^1.0.1`.
+
+### Changed (DAR/0.1 preimage)
 
 - **Hashes-only DAR core.** Removed `decision` from the core; added required
   `inputHash` and `outputHash`; `decisionHash` is now `SHA3-256(JCS({ schemaHash,
@@ -49,7 +65,7 @@ to a consumable `dist/` (ES modules + `.d.ts`); a `prepublishOnly` hook rebuilds
   to one mapping file.
 - **`@rubric-protocol/schema`** — raw JSON Schema / Zod (via `zod-to-json-schema`)
   adapter producing DAR inputs.
-- **`@rubric-protocol/verify`** — `gate()`-fronted `/v1/x402/decision-verify` route:
+- **`@rubric-protocol/decision-verify`** — `gate()`-fronted `/v1/x402/decision-verify` route:
   Merkle inclusion-proof verification, HCS anchor reference, signature result,
   drift flag, and chain-check continuity (forks rendered as branches).
 - **`@rubric-protocol/evidence`** — `rubric-evidence export` CLI: offline evidence

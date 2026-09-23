@@ -1,6 +1,6 @@
 {
   "name": "@rubric-protocol/attest-index",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "description": "Rubric attestation index: SQLite day-shard writer, backfill, query lib",
   "license": "Apache-2.0",
@@ -29,7 +29,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@rubric-protocol/attest-decision": "^1.0.0",
+    "@rubric-protocol/attest-decision": "^1.0.1",
     "better-sqlite3": "^11.3.0"
   }
 }

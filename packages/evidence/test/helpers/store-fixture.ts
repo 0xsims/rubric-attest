@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { decisionHashOf, hashJson, leafHash, type DarCore } from "@rubric-protocol/attest-decision";
 import { backfill } from "@rubric-protocol/attest-index";
-import { buildMerkleTree, type VerifiableBundle } from "@rubric-protocol/verify";
+import { buildMerkleTree, type VerifiableBundle } from "@rubric-protocol/decision-verify";
 
 export interface DarSpec {
   decisionId: string;
