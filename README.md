@@ -29,6 +29,15 @@ walk. Details in [`spec/dar-0.1.md`](./spec/dar-0.1.md).
 
 Monorepo for the Rubric Decision Attestation system.
 
+## Quickstart
+
+```bash
+npm install @rubric-protocol/attest-decision
+export RUBRIC_API_KEY=your-key
+```
+
+Free API key: https://rubric-protocol.com/get-started. Code example under [SDK usage](#sdk-usage-rubric-protocolattest-decision).
+
 ## Layout
 
 | Path | What |
@@ -59,7 +68,7 @@ Monorepo for the Rubric Decision Attestation system.
 import { Attestor, HttpTransport } from "@rubric-protocol/attest-decision";
 
 const attestor = new Attestor({
-  transport: new HttpTransport({ baseUrl: "https://attest.example" }), // reads RUBRIC_API_KEY
+  transport: new HttpTransport({ baseUrl: "https://rubric-protocol.com" }), // reads RUBRIC_API_KEY
   spoolPath: "/var/lib/rubric/attest.spool",
   // mode: "payload",  // optional — also ship raw content in the transport envelope; default is "hash-only"
 });
