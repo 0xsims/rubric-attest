@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { DarBuilder, leafHash, canonicalDar, decisionHashOf, type DarCore, type DarMeta } from "../src/index.js";
+import { AgentIdError, DarBuilder, leafHash, canonicalDar, decisionHashOf, validateAgentId, type DarCore, type DarMeta } from "../src/index.js";
 
 interface GoldenStep {
   agentId: string;
@@ -121,5 +121,38 @@ describe("DAR builder — validation and hashing", () => {
     expect(() =>
       builder.build({ agentId: "A", schema: {}, input: { blob: "x".repeat(1000) }, output: {} }),
     ).toThrow(/maxDecisionBytes/);
+  });
+});
+
+describe("DAR builder — agentId validation (server batch-ingest rules)", () => {
+  const io = { schema: {}, input: {}, output: {} };
+
+  it("throws AgentIdError for ids outside ^[A-Za-z0-9._:/@-]{1,200}$", () => {
+    const b = new DarBuilder();
+    for (const bad of ["", "a b", "é", "a‮b", "x".repeat(201), "a#b"]) {
+      expect(() => b.build({ agentId: bad, ...io })).toThrow(AgentIdError);
+    }
+    expect(b.build({ agentId: "x".repeat(200), ...io }).agentId).toHaveLength(200);
+    expect(b.build({ agentId: "ns_0123456789ab/loan-bot", ...io }).agentId).toBe("ns_0123456789ab/loan-bot");
+  });
+
+  it("refuses Rubric's reserved ids unless allowReservedAgentIds", () => {
+    for (const id of ["rubric", "RUBRIC", "rubric://x402/decision-review", "rubric-bot", "rubric.x", "rubric@x", "rubric_x", "rubric:x"]) {
+      expect(() => new DarBuilder().build({ agentId: id, ...io })).toThrow(/reserved/);
+      expect(new DarBuilder({ allowReservedAgentIds: true }).build({ agentId: id, ...io }).agentId).toBe(id);
+    }
+    expect(new DarBuilder().build({ agentId: "rubrical.io/bot", ...io }).agentId).toBe("rubrical.io/bot");
+  });
+
+  it("validateAgentId is exported for callers that check ahead of time", () => {
+    expect(() => validateAgentId("ok-bot")).not.toThrow();
+    expect(() => validateAgentId("rubric-x", { allowReserved: true })).not.toThrow();
+    expect(() => validateAgentId(42)).toThrow(AgentIdError);
+  });
+
+  it("uses an explicit decisionId and time when given", () => {
+    const dar = new DarBuilder().build({ agentId: "A", ...io }, { decisionId: "01J0000000000000000000000A", at: Date.UTC(2026, 0, 1) });
+    expect(dar.decisionId).toBe("01J0000000000000000000000A");
+    expect(dar.ts).toBe("2026-01-01T00:00:00.000Z");
   });
 });

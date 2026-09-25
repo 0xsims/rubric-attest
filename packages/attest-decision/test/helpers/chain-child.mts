@@ -24,6 +24,7 @@ const attestor = new Attestor({
   maxBatch: 100_000,
   chainStore: new FileChainHeadStore({ dir: storeDir, lockTimeoutMs: 10_000 }),
   onError: (e) => errors.push(String(e)),
+  allowReservedAgentIds: true, // the parent uses Rubric's own agentId, as its emitter does
 });
 
 const deadline = Date.now() + 10_000;
