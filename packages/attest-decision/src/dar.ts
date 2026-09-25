@@ -5,7 +5,9 @@
  * maintains the per-agent `prev` chain. The core never carries raw content.
  */
 import {
+  AGENT_ID_RE,
   DAR_VERSION,
+  RESERVED_AGENT_ID_RE,
   type AdapterInfo,
   type DarCore,
   type HashString,
@@ -46,6 +48,43 @@ export interface DarBuilderDeps {
   now?: () => number;
   /** Reject a decision whose canonical input+output exceeds this many bytes. Default 256 KiB. */
   maxDecisionBytes?: number;
+  /**
+   * Permit Rubric's own agentIds (`rubric`, `rubric://…`, `rubric-…`, …). Only
+   * Rubric's internal emitters, whose keys the server exempts, set this.
+   * Default false.
+   */
+  allowReservedAgentIds?: boolean;
+}
+
+/** An agentId the server's batch ingest would reject. Thrown from build() and attest(). */
+export class AgentIdError extends Error {
+  constructor(
+    message: string,
+    readonly agentId: unknown,
+  ) {
+    super(message);
+    this.name = "AgentIdError";
+  }
+}
+
+/**
+ * Check a full agentId (namespace prefix included) against the server's batch
+ * ingest rules: `^[A-Za-z0-9._:/@-]{1,200}$`, and not `rubric` alone or followed
+ * by `:` `/` `_` `.` `@` `-` unless `allowReserved`. Throws AgentIdError.
+ */
+export function validateAgentId(agentId: unknown, options?: { allowReserved?: boolean }): asserts agentId is string {
+  if (typeof agentId !== "string" || agentId.length === 0) {
+    throw new AgentIdError("DAR: agentId must be a non-empty string", agentId);
+  }
+  if (!AGENT_ID_RE.test(agentId)) {
+    throw new AgentIdError(
+      `DAR: agentId '${agentId.slice(0, 64)}' must be 1-200 characters of A-Z a-z 0-9 . _ : / @ -`,
+      agentId,
+    );
+  }
+  if (!options?.allowReserved && RESERVED_AGENT_ID_RE.test(agentId)) {
+    throw new AgentIdError(`DAR: agentId '${agentId.slice(0, 64)}' is reserved for Rubric's own agents`, agentId);
+  }
 }
 
 /** Derive `decisionHash` from the three content commitments (spec §4.2). */
@@ -57,6 +96,7 @@ export class DarBuilder {
   private readonly newDecisionId: () => string;
   private readonly now: () => number;
   private readonly maxDecisionBytes: number;
+  private readonly allowReservedAgentIds: boolean;
   private readonly heads = new Map<string, string>();
   // Keyed by object identity: reusing the same schema object across build()
   // calls skips re-hashing. CONTRACT: schema objects must be treated as
@@ -68,18 +108,23 @@ export class DarBuilder {
     this.newDecisionId = deps.newDecisionId ?? defaultUlid;
     this.now = deps.now ?? Date.now;
     this.maxDecisionBytes = deps.maxDecisionBytes ?? DEFAULT_MAX_DECISION_BYTES;
+    this.allowReservedAgentIds = deps.allowReservedAgentIds ?? false;
   }
 
   /**
    * Build a DAR core. `options.prev`, when given (including `null`), is used as
    * `prev` instead of this builder's in-memory head for the agent; the Attestor
    * passes it when a shared chain-head store is configured.
+   *
+   * `options.decisionId` and `options.at` (epoch ms) replace the minted id and
+   * the clock; the Attestor passes them for a record it accepted in attest()
+   * but builds later (while its namespace is being discovered or checked).
+   *
+   * Throws AgentIdError if `agentId` is outside the server's rules.
    */
-  build(input: DarBuildInput, options?: { prev?: string | null }): DarCore {
+  build(input: DarBuildInput, options?: { prev?: string | null; decisionId?: string; at?: number }): DarCore {
     const { agentId } = input;
-    if (typeof agentId !== "string" || agentId.length === 0) {
-      throw new Error("DAR: agentId must be a non-empty string");
-    }
+    validateAgentId(agentId, { allowReserved: this.allowReservedAgentIds });
     const leafType: LeafType = input.meta?.leafType ?? "decision";
     if (!LEAF_TYPES.has(leafType)) {
       throw new Error(`DAR: unknown leafType '${leafType}'`);
@@ -99,9 +144,9 @@ export class DarBuilder {
     const outputHash = sha3_256(outputBytes);
     const decisionHash = decisionHashOf(schemaHash, inputHash, outputHash);
 
-    const decisionId = this.newDecisionId();
+    const decisionId = options?.decisionId ?? this.newDecisionId();
     const prev = options?.prev !== undefined ? options.prev : (this.heads.get(agentId) ?? null);
-    const ts = new Date(this.now()).toISOString();
+    const ts = new Date(options?.at ?? this.now()).toISOString();
 
     const dar: DarCore = {
       v: DAR_VERSION,

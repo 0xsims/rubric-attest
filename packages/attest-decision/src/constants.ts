@@ -17,6 +17,29 @@ export const TIERED_ATTEST_PATH = "/v1/tiered-attest" as const;
 /** The single credential env var the SDK reads (CLAUDE.md invariant). */
 export const API_KEY_ENV = "RUBRIC_API_KEY" as const;
 
+/** SDK name, as sent in the version header. */
+export const SDK_NAME = "attest-decision" as const;
+
+/**
+ * This package's version. Must equal `version` in package.json (a test fails
+ * otherwise). It is a literal rather than a runtime read of package.json because
+ * src/ is also consumed verbatim as CommonJS (rubric-protocol's test shim), where
+ * neither `import.meta` nor a path relative to this file reaches package.json.
+ */
+export const SDK_VERSION = "1.2.0" as const;
+
+/** Header carrying `attest-decision/<version>` on every batch POST; the server needs >= 1.2.0. */
+export const SDK_VERSION_HEADER = "x-rubric-sdk" as const;
+
+/** A batch-ingest namespace: a random public id the server mints onto an API key. */
+export const NAMESPACE_RE = /^ns_[0-9a-f]{12}$/;
+
+/** The agentId charset/length the server's batch ingest accepts (full id, prefix included). */
+export const AGENT_ID_RE = /^[A-Za-z0-9._:/@-]{1,200}$/;
+
+/** Rubric's own agent ids: `rubric` alone or followed by a separator, any case. */
+export const RESERVED_AGENT_ID_RE = /^rubric([:/_.@-]|$)/i;
+
 /** Leaf discriminant values (spec §2, `leafType`). */
 export type LeafType = "decision" | "schema-change" | "checkpoint";
 
