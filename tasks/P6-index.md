@@ -1,6 +1,6 @@
 # Task P6: Anchor links in the attestation jsonl
 
-Read CLAUDE.md. The spec is `docs/specs/attestation-index-and-replay.md` (§3, D5). Decision D5 is closed. The canonical write-time index is the existing append-only `/mnt/tempus-attestation-store/bundles/attestation-index.jsonl`, written by `rubric-protocol/src/api/index-writer.ts`. Do not add a new write hook, and do not create a third index. D1's schema-v2-for-every-kind, `IndexSink` and `anchors` table are dropped.
+Read CLAUDE.md. The spec is `docs/specs/attestation-index-and-replay.md` (§3, D5). Decision D5 is closed. The canonical write-time index is the existing `/mnt/tempus-attestation-store/bundles/attestation-index.jsonl`, written by `rubric-protocol/src/api/index-writer.ts`. Anchor-link lines are append-only. Attestation lines are not strictly so, because `reconcile-rt.py` rewrites their `rt` field (spec §3.1, O7). Do not add a new write hook, and do not create a third index. D1's schema-v2-for-every-kind, `IndexSink` and `anchors` table are dropped.
 
 The work spans two repos:
 * `rubric-protocol`:
