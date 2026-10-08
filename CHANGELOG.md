@@ -10,6 +10,70 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-25
+
+Namespace-aware batch ingest. Batch ingest (`POST /v1/tiered-attest` with
+`{ records }`) now requires every `agentId` to be `<namespace>/<name>`, where the
+namespace (`ns_<12 hex>`) is a random public id the server mints onto the API key,
+and answers **426 Upgrade Required** to SDKs before 1.2.0.
+
+### Added
+
+- **`@rubric-protocol/attest-decision`: `AttestorOptions.namespace`.** An explicit
+  `ns_<12 hex>` (recommended) makes `attest()` prefix each `agentId` with
+  `<namespace>/` **before** the DAR is built, so the prefix is inside the hashed
+  core. An `agentId` already carrying that prefix is kept; one carrying another
+  namespace throws. Built or spooled DARs are never rewritten.
+- **The configured namespace is authoritative; responses only check it.** When a
+  response's `namespace` differs, or the server answers `403
+  NAMESPACE_UNAVAILABLE`, the Attestor stops building and sending, keeps every
+  record, reports a `NamespaceMismatchError`, and retries the same batch with
+  doubling backoff (`namespaceRetries`, default 5; `namespaceRetryMs`, default
+  20 s, about 10 min in all). If the node still disagrees the error is `fatal` and
+  the Attestor stays stopped. It never drops, re-prefixes, or adopts the other
+  value. A later agreeing answer resumes it. Records passed to `attest()` while
+  paused are held in memory (bounded by `maxQueue`), keep the `decisionId` and
+  time of the `attest()` call, and are built on resume.
+- **Opt-in `namespace: "discover"`.** Sends free empty-batch handshakes until
+  three consecutive answers agree (`DISCOVERY_AGREEMENT`), then uses the value and
+  persists it at `namespacePath` (default `${spoolPath}.namespace`), so a restart
+  does not rediscover. `attest()` calls are held in memory meanwhile; `ready()`
+  resolves when the namespace is known.
+- **`x-rubric-sdk: attest-decision/<version>`** on every batch POST
+  (`SDK_NAME`, `SDK_VERSION`, `SDK_VERSION_HEADER`).
+- **Responses are parsed.** `Transport.send()` may now resolve a `SendResult`
+  (`namespace`, `accepted`, `rejected`); returning nothing is still valid for
+  custom transports. A non-2xx rejects with a `TransportError` (`status`, `code`,
+  `namespace`, `retryAfterMs`) whose message is the server's own `error` and
+  `hint` (for 426, also the minimum version). `425 Retry-After` is honoured.
+- **Rejected records are reported.** Records a `200` lists in `rejected` are
+  final and go to `onError` as a `BatchRejectedError` with each `reason`; an
+  `agentId_namespace` reject names the namespace to configure.
+- `validateAgentId`, `AgentIdError`, `DarBuilder.build(input, { decisionId, at })`,
+  `Attestor.getNamespace()`, `Attestor.ready()`.
+
+### Changed
+
+- **`attest()` throws `AgentIdError`** when the full `agentId` (prefix included)
+  is outside the server's rules: `^[A-Za-z0-9._:/@-]{1,200}$`, and not Rubric's
+  reserved `rubric` / `rubric` + `:` `/` `_` `.` `@` `-`. Such records used to be
+  rejected under a 200 and lost; now the mistake fails where it is made.
+  `DarBuilder.build` enforces the same rules. Every other failure still goes to
+  `onError`, and `attest()` still never throws for them.
+- **Rubric's internal emitters must set `allowReservedAgentIds: true`** (on the
+  `Attestor` or `DarBuilder`) to keep using `rubric://…` agentIds.
+- **Without `onError`, failures go to `console.warn`**, never silently.
+- `pendingCount()` includes records held in memory.
+- All six packages bumped to 1.2.0.
+
+### Upgrading
+
+- Pass your key's `namespace`. Records spooled by 1.1.0 were built without the
+  prefix and cannot be repaired: the server rejects them (`agentId_namespace`) and
+  1.2.0 reports them through `onError`.
+- Verify customer DARs by the `decisionId` that `attest()` returns. Lookup by
+  `decisionHash` covers only DARs from Rubric's own decision-review service.
+
 ## [1.1.0] - 2026-09-23
 
 ### Added

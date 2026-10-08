@@ -1,6 +1,6 @@
 {
   "name": "@rubric-protocol/decision-verify",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "description": "Rubric decision-verify route: x402 gate, Merkle/anchor/signature verification, chain-check",
   "license": "Apache-2.0",

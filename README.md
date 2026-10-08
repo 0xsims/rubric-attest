@@ -38,6 +38,8 @@ export RUBRIC_API_KEY=your-key
 
 Free API key: https://rubric-protocol.com/get-started. Code example under [SDK usage](#sdk-usage-rubric-protocolattest-decision).
 
+> Batch ingest is in limited rollout. Request access: Scott@Rubric-Protocol.com
+
 ## Layout
 
 | Path | What |
@@ -60,7 +62,8 @@ Free API key: https://rubric-protocol.com/get-started. Code example under [SDK u
   changes bump the minor.
 - The SDK reads exactly one credential env var: `RUBRIC_API_KEY`.
 - `attest()` never blocks the caller and never throws into app code; failures
-  spool.
+  spool. The one exception is an invalid `agentId` (`AgentIdError`), a mistake
+  at the call site that no retry could fix.
 
 ## SDK usage (`@rubric-protocol/attest-decision`)
 
@@ -70,23 +73,84 @@ import { Attestor, HttpTransport } from "@rubric-protocol/attest-decision";
 const attestor = new Attestor({
   transport: new HttpTransport({ baseUrl: "https://rubric-protocol.com" }), // reads RUBRIC_API_KEY
   spoolPath: "/var/lib/rubric/attest.spool",
+  namespace: "ns_<12 hex>", // your key's namespace; see "Namespaces" below
   // mode: "payload",  // optional — also ship raw content in the transport envelope; default is "hash-only"
+  onError: (err) => logger.warn(err), // optional; defaults to console.warn
 });
 
-// Fire-and-forget: returns immediately (<1 ms), never throws into app code.
-// The DAR core is hashes-only: schema/input/output are hashed, never carried raw.
-attestor.attest({
-  agentId: "agent://jev/pricing-v3",
-  schema: pricingSchema,                                // hashed to schemaHash
-  input: { requestId: "req-1" },                        // hashed to inputHash
-  output: { action: "approve", limitUsd: "2500.00" },   // hashed to outputHash
+// Fire-and-forget: returns immediately (<1 ms). The DAR core is hashes-only:
+// schema, input and output are hashed, never carried raw.
+const decisionId = attestor.attest({
+  agentId: "loan-bot", // sent as "<namespace>/loan-bot", prefixed before hashing
+  schema: {                                             // hashed to schemaHash
+    type: "object",
+    properties: { action: { enum: ["approve", "decline"] }, limitUsd: { type: "string" } },
+    required: ["action"],
+  },
+  input: { applicantId: "app-1042", requestedUsd: "2500.00" }, // hashed to inputHash
+  output: { action: "approve", limitUsd: "2500.00" },           // hashed to outputHash
 });
+// Keep decisionId with your own record of the decision: it is how you verify it.
 ```
 
 Records are appended to a durable spool (its parent directory is created if
 missing) and flushed in batches (64 records or 5000 ms) with one POST per flush
 to `/v1/tiered-attest`. A `kill -9` at any point loses zero spooled records — the
 next process drains the spool on startup.
+
+### Namespaces
+
+Batch ingest requires every `agentId` to live in your API key's **namespace**:
+`ns_<12 hex>/<name>`. The namespace is a random public id Rubric assigns to your
+key when batch ingest is enabled for it; get it from the dashboard or from the
+operator who enabled the key, and pass it as `namespace`. The SDK then prefixes
+each `agentId` you pass to `attest()` (`"loan-bot"` becomes
+`"ns_…/loan-bot"`) **before** building the record, because `agentId` is inside
+the hashed core: a record can never be re-prefixed afterwards. An `agentId` that
+already carries your prefix is kept as is.
+
+- **The configured value is authoritative.** Every server response carries the
+  key's `namespace`, and the SDK only checks it. If a response disagrees (or the
+  server answers `403 NAMESPACE_UNAVAILABLE`), that server node is
+  misconfigured: the Attestor stops building and sending, keeps every record,
+  reports a `NamespaceMismatchError` through `onError`, and retries the same
+  batch with backoff (5 times over about 10 minutes by default:
+  `namespaceRetries`, `namespaceRetryMs`). If it still disagrees, the error is
+  `fatal` and the Attestor stays stopped until the node or your configuration
+  is fixed and the process restarted. Nothing is dropped; records passed to
+  `attest()` meanwhile are held in memory.
+- **`namespace: "discover"`** is for when you don't have the value yet: before
+  building anything, the SDK sends empty handshake batches (free) until three
+  consecutive answers agree, then uses that value and persists it next to the
+  spool (`namespacePath`). `attest()` calls are held in memory until then. The
+  explicit option is the safe path: discovery could, in principle, pin a
+  misconfigured node's value, and a record built with a wrong prefix can never
+  be repaired.
+- **`agentId` rules** are checked in `attest()`, which throws `AgentIdError` if
+  the full id (prefix included) is outside `^[A-Za-z0-9._:/@-]{1,200}$` or is
+  reserved for Rubric (`rubric`, `rubric:…`, `rubric/…`, `rubric-…`, …).
+- **426 Upgrade Required.** The server requires SDK 1.2.0 or later (the SDK
+  sends `x-rubric-sdk: attest-decision/<version>`). Older SDKs get `426`, keep
+  their batches spooled, and report the minimum version through `onError`.
+- **Rejected records.** A `200` can list records the server will never store
+  (`rejected`, each with a `reason`); they are reported through `onError` as a
+  `BatchRejectedError`, never dropped silently. Other responses (`403`, `425`,
+  `426`, `429`, `503`, `507`, network errors) keep the batch and retry it, and
+  are reported through `onError` with the server's message.
+- **Upgrading from 1.1.0:** records already in a 1.1.0 spool were built
+  without the prefix. They cannot be re-prefixed, so the server rejects them
+  (`agentId_namespace`) and they are reported as rejected.
+
+### Verifying a decision
+
+Store the `decisionId` returned by `attest()` with your own record of the
+decision, and verify with it:
+`POST https://rubric-protocol.com/v1/x402/decision-verify` with `{ "decisionId": "…" }`.
+
+Do not verify by `decisionHash`. A decision hash covers the schema, input and
+output, not who made the decision, so many records can share one. Lookup by
+`decisionHash` covers only records Rubric's own decision-review service issues,
+and returns 404 for yours.
 
 ### Guarantees and limits
 

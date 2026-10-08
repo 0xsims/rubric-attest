@@ -12,6 +12,12 @@ export {
   HASH_PREFIX,
   TIERED_ATTEST_PATH,
   API_KEY_ENV,
+  SDK_NAME,
+  SDK_VERSION,
+  SDK_VERSION_HEADER,
+  NAMESPACE_RE,
+  AGENT_ID_RE,
+  RESERVED_AGENT_ID_RE,
   type LeafType,
   type HashString,
   type DarCore,
@@ -29,6 +35,8 @@ export {
   canonicalDar,
   decisionHashOf,
   toPayload,
+  validateAgentId,
+  AgentIdError,
   type DarBuildInput,
   type DarBuilderDeps,
   type DarMeta,
@@ -36,10 +44,19 @@ export {
 export { Spool, DEFAULT_MAX_BYTES, type SpoolRecord, type SpoolOptions } from "./spool.js";
 export {
   HttpTransport,
+  TransportError,
   type Transport,
   type HttpTransportOptions,
+  type SendResult,
+  type RejectedRecord,
 } from "./transport.js";
-export { Attestor, type AttestorOptions } from "./attestor.js";
+export {
+  Attestor,
+  NamespaceMismatchError,
+  BatchRejectedError,
+  DISCOVERY_AGREEMENT,
+  type AttestorOptions,
+} from "./attestor.js";
 export {
   FileChainHeadStore,
   ChainHeadStoreError,

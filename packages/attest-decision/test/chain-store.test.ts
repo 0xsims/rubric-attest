@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  AgentIdError,
   Attestor,
   ChainHeadStoreError,
   DarBuilder,
@@ -279,10 +280,12 @@ describe("FileChainHeadStore", () => {
     await a.close();
   });
 
-  it("never throws into the caller, even for a bad agentId", async () => {
+  it("throws AgentIdError for a bad agentId (1.2.0), and spools nothing", async () => {
     const a = new Attestor({ transport: new SinkTransport(), spoolPath: join(dir, "w0.spool"), chainStore: new FileChainHeadStore({ dir: storeDir }) });
-    expect(a.attest({ ...input(1), agentId: "" })).toBeNull();
-    expect(a.attest({ ...input(1), agentId: 7 as unknown as string })).toBeNull();
+    expect(() => a.attest({ ...input(1), agentId: "" })).toThrow(AgentIdError);
+    expect(() => a.attest({ ...input(1), agentId: 7 as unknown as string })).toThrow(AgentIdError);
+    expect(a.pendingCount()).toBe(0);
+    expect(readdirSync(storeDir)).toEqual([]);
     await a.close();
   });
 
