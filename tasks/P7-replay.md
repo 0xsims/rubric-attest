@@ -8,7 +8,7 @@ Read CLAUDE.md. The spec is `docs/specs/attestation-index-and-replay.md` (§2.4�
    * Pick the ML-DSA-65 library.
    * Document the exact signed byte string for each bundle kind in spec §4.5, with rubric-protocol file:line references.
    * Confirm the §2.5 byte constructions (including `makeLeafV2` and the hex-string wrap) against the code.
-   * Resolve spec §6 O6: read topic 0.0.10416909's `submit_key` from the mirror, and if there is none, get the operator payer accounts from the owner. Board review is needed if a pinned list is published.
+   * Resolve spec §6 O6: read topic 0.0.10416909's `submit_key` and its `timestamp.from` from the mirror. If there is no key, or if any anchor messages were posted before `timestamp.from`, get the operator payer accounts from the owner. Board review is needed if a pinned list is published.
 
    Write no verifier code until §4.5 is filled in and O6 has an answer.
 2. Generate golden vectors from rubric-protocol's own code (`spec-merkle.ts`, `merkle.ts`, `canonical.ts`, the signer) and commit them under `packages/replay-verify/test/vectors/`:
