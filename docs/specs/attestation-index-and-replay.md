@@ -16,10 +16,11 @@ paths are in this repo (`rubric-attest`).
 
 | # | Decision |
 |---|---|
-| D1 | **Extend `packages/attest-index`; do not replace it.** Day-shard SQLite stays. Add a write-time hook on the rubric-protocol bundle write path so every bundle (not only DAR records) gets an index row. Extend the existing backfill CLI to cover all bundle types. |
+| D1 | *Superseded by D5.* It was: extend `packages/attest-index` with a write-time hook so every bundle gets an index row. |
 | D2 | **Replay verifier is a standalone package with zero calls to our API.** It checks the ML-DSA-65 bundle signature against `https://rubric-protocol.com/.well-known/rubric-keys.json`, folds leaf → `aggregateRoot` using the `alg` block in the anchor message, then fetches the `RUBRIC_TIER2_ANCHOR` message for topic `0.0.10416909` from `mainnet-public.mirrornode.hedera.com` and matches `anchorId` and `aggregateRoot`. |
 | D3 | **The drift check is a standalone script in this repo, not in rubric-assert.** It walks topic messages via the `prevAnchorId` chain. It flags chain gaps, anchors missing from the index, and index anchors missing from the mirror node. It ignores anchors younger than 10 minutes and exits nonzero on drift. A human wires it into rubric-assert. |
 | D4 | **Anchor origin is decided by a pinned payer list (closes §6 O6).** Topic `0.0.10416909` has `submit_key: null` and `admin_key: null` on the mirror node, so it is immutable and a submit key can never be added. The replay verifier accepts only `RUBRIC_TIER2_ANCHOR` messages whose `payer_account_id` is in the pinned anchor-payer list, currently `0.0.3923341`. The list is published as `anchorPayers` in `https://rubric-protocol.com/.well-known/rubric-keys.json` (§2.6), and the verifier ships a hardcoded fallback. Messages from any other payer are ignored for verification. The drift check flags any message from an unpinned payer and any break in the `prevAnchorId` chain. |
+| D5 | **The canonical write-time index is the existing append-only `attestation-index.jsonl`**, written by `rubric-protocol/src/api/index-writer.ts` (about 105k rows, read by the auditor, export, telemetry, credentials and reputation endpoints). Do not add a new write hook and do not create a third index. When the anchor job anchors, it appends an anchor-link record to the same jsonl (`id`, `anchorId`, `aggregateRoot`, HCS sequence, consensus timestamp) and never rewrites earlier lines. Historical anchors get anchor-links backfilled from the mirror node. `packages/attest-index` ingests from the jsonl, so decision-verify reads the same data. See §3. |
 
 Anything below that looks like it conflicts with D1–D3 is a refinement of how to
 build them, not a change to them. Items that would need a format change are
@@ -35,11 +36,11 @@ Each bundle type is written in a different place:
 
 | Bundle type | Written at | Indexed today by |
 |---|---|---|
-| Tiered (default `/v1/tiered-attest`) | `rubric-protocol/src/verify/tiered-aggregator.ts` stubs `:321`, signed batch bundle `:404`, warm record per item `:424-455` | `appendIndexEntry` via `onTier1Flush` (`src/aggregator/index.ts:297-331`) — a Redis/legacy index, not attest-index |
-| Tier-2 anchor bundle `<anchorId>.json` | `tiered-aggregator.ts:503-509` (`seqNum: null`) | none |
-| Direct (`/v1/attest`) | `src/verify/attestation-publisher.ts:270` | `server.ts` `indexEntry()` `:307`, called `:692` |
-| Threshold multisig | `src/api/threshold-endpoint.ts:494` | `appendIndexEntry` `:500` |
-| DAR | `src/api/dar-emit.ts` `TieredDarTransport.store()` `:501` (pending), `Enricher.enrichOne` `:957-983` (completed) | attest-index, via offline backfill only (`deploy-bundle/run-backfill.mjs`) |
+| Tiered (default `/v1/tiered-attest`) | `rubric-protocol/src/verify/tiered-aggregator.ts` stubs `:321`, signed batch bundle `:404`, warm record per item `:424-455` | the jsonl (§3.1), via `appendIndexEntry` in `onTier1Flush` (`src/aggregator/index.ts:297-311`) |
+| Tier-2 anchor bundle `<anchorId>.json` | `tiered-aggregator.ts:503-509` (`seqNum: null`) | none (P6 adds anchor-link lines to the jsonl) |
+| Direct (`/v1/attest`) | `src/verify/attestation-publisher.ts:270` | the jsonl, via `server.ts` `indexEntry()` `:307`, called `:692` |
+| Threshold multisig | `src/api/threshold-endpoint.ts:494` | the jsonl, via `appendIndexEntry` `:500` |
+| DAR | `src/api/dar-emit.ts` `TieredDarTransport.store()` `:501` (pending), `Enricher.enrichOne` `:957-983` (completed) | the jsonl as its tiered stub; attest-index via offline backfill only (`deploy-bundle/run-backfill.mjs`) |
 
 Anchoring runs in the separate `rubric-aggregator` process
 (`ecosystem.config.cjs:84-118`, `src/aggregator/index.ts`), not in `server.ts`.
@@ -159,164 +160,251 @@ no shared client.
 
 ---
 
-## 3. P6: Index for every bundle type
+## 3. P6: One index, the attestation jsonl
 
-### 3.1 Schema v2
+D5 replaces the design that used to be here (schema v2 for every bundle kind,
+an `IndexSink` write hook with six call sites, and an `anchors` table). None of
+that is built. P6 adds anchor links to the existing jsonl, backfills them from
+the mirror, and makes attest-index ingest the jsonl.
 
-Bump the shard schema to version 2, tracked with `PRAGMA user_version`. Keep
-the existing `attestations` table name, so readers that use the four existing
-queries keep working.
+### 3.1 The jsonl as it is today
 
-```sql
-CREATE TABLE attestations (
-  attestationId   TEXT PRIMARY KEY,
-  bundleKind      TEXT NOT NULL,     -- 'tiered' | 'direct' | 'threshold' | 'dar'
-  leafType        TEXT,              -- as written; NULL if the bundle has none
-  agentId         TEXT,              -- NULL if unknown
-  namespace       TEXT,              -- 'ns_<12hex>' parsed from agentId, else NULL
-  decisionId      TEXT,              -- DAR only
-  schemaHash      TEXT,              -- DAR only
-  decisionHash    TEXT,              -- DAR only
-  prev            TEXT,              -- DAR only
-  leafHash        TEXT NOT NULL,     -- leaf of the anchored batch tree, alg-prefixed
-  darLeafHash     TEXT,              -- DAR core leaf (sha3-256:…), DAR only
-  anchorId        TEXT,              -- NULL until the tier-2 flush
-  aggregateRoot   TEXT,              -- NULL until the tier-2 flush
-  hcsSequence     INTEGER,           -- NULL until known
-  hcsConsensusTs  TEXT,              -- NULL until known; never wall clock
-  ts              TEXT NOT NULL,     -- shard key, see 3.3
-  bundlePath      TEXT NOT NULL
-);
-CREATE UNIQUE INDEX ux_decisionId ON attestations(decisionId) WHERE decisionId IS NOT NULL;
--- existing ix_agent_ts, ix_agent_schema, ix_agent_decisionId, ix_agent_prev unchanged
-CREATE INDEX ix_anchor    ON attestations(anchorId);
-CREATE INDEX ix_ns_ts     ON attestations(namespace, ts);
-CREATE INDEX ix_pending   ON attestations(ts) WHERE anchorId IS NULL OR hcsSequence IS NULL;
+* **Path:** `/mnt/tempus-attestation-store/bundles/attestation-index.jsonl`.
+  It has about 105k lines, one JSON object per line, in the `MinimalIndexEntry`
+  shape (`rubric-protocol/src/api/index-writer.ts:9-35`):
+  `id, ts, src, pip, fr, ph, rt, seq, batch, n, leafTypes, sig, algo`, the
+  compliance-meta fields, and `agentId`. **It has no `attestation_type`, no
+  DAR fields (`decisionId`, `decisionHash`, `prev`), and no anchor fields.**
+  Tiered lines are written at tier-1 time with `seq: null` and `fr: ''`.
+* **Writers:**
 
-CREATE TABLE anchors (              -- one row per tier-2 anchor bundle
-  anchorId        TEXT PRIMARY KEY,
-  aggregateRoot   TEXT NOT NULL,
-  prevAnchorId    TEXT,
-  tier1Count      INTEGER,
-  totalItems      INTEGER,
-  anchoredAt      TEXT NOT NULL,     -- as in the message; shard key
-  hcsSequence     INTEGER,
-  hcsConsensusTs  TEXT,
-  bundlePath      TEXT NOT NULL
-);
+  | Writer | Path | How |
+  |---|---|---|
+  | `appendIndexEntry` (`index-writer.ts:43-96`) | tiered stubs per tier-1 flush (`aggregator/index.ts:297-311`, rubric-aggregator process); threshold (`threshold-endpoint.ts:500`) | `appendFileSync`, one line per call |
+  | `indexEntry` → `saveQueryIndex` (`server.ts:307`, `:287-305`) | direct (`server.ts:692`); tiered stubs on the server path (`server.ts:2207`) | buffered, up to 500 lines per async `fs.appendFile` (`:261-284`) |
+
+  So **at least two processes append to the file**. `attest-worker.ts:90-103`
+  appends to a different file (`attestation-store/attestation-index.jsonl`
+  relative to the build). That file is not the canonical index and P6 does
+  not touch it.
+* **Readers** (all in `rubric-protocol/src/api/`): `auditor-endpoint.ts:94`,
+  `export-endpoint.ts:28`, `telemetry-endpoint.ts:23`,
+  `credentials-endpoint.ts:72`, `reputation-route.ts:486`,
+  `incident-endpoint.ts:39`, `filing-endpoint.ts:32`,
+  `board-report-endpoint.ts:20`, `jurisdiction-endpoint.ts:96`,
+  `regulatory-monitoring-endpoint.ts:187`, `server.ts:201-211` (tail of 5000
+  lines). Plus `retention.py` (never deletes the file, `:11`) and
+  `reconcile-rt.py`. **None of them filters by record type.** Every parsed line
+  is treated as an attestation. `export-endpoint.ts:37-38` even keeps a line
+  whose `ts` does not parse, because `NaN` comparisons are false.
+* **Not strictly append-only today.** `reconcile-rt.py:39-63` rewrites the
+  `rt` field of earlier lines, writes a temp file, and `os.replace`s the
+  index. Its flock (`:18-21`) is not taken by the writers. So a line appended
+  between the tail read (`:60-61`) and the replace (`:63`) is lost. See §6 O7.
+
+### 3.2 The anchor-link record
+
+One line per covered attestation per anchor message:
+
+```json
+{"kind":"anchor-link","v":1,"id":"<attestationId>","anchorId":"<anchorId>",
+ "aggregateRoot":"<hex>","topic":"0.0.10416909","hcsSequence":"<n>",
+ "hcsConsensusTs":null,"source":"anchor-job","writtenAt":"<wall clock>"}
 ```
+
+`id`, `anchorId`, `aggregateRoot`, `hcsSequence` and `hcsConsensusTs` are the
+link. `kind` lets readers tell it apart from attestation lines. `source` is
+`anchor-job` or `backfill-mirror`. `writtenAt` is the writer's wall clock when
+the line was appended. It is used only as an age for P8's `--min-age` on the
+index side, and it is never a consensus or anchored time. The link carries no
+`anchoredAt`: the anchor job never learns the message's own `anchoredAt`
+(`attestation-publisher.ts:419`, and `publishTier2Anchor` returns only the
+sequence number).
 
 Rules:
 
-* **`leafHash` is always alg-prefixed** (`sha256:` for tiered batch leaves,
-  `sha3-256:` where applicable). The two leaf constructions must never be
-  compared unprefixed.
-* **`hcsConsensusTs` only takes a consensus timestamp**: from `getRecord()` or
-  from the mirror node. `anchorConfirmedAt` and other wall-clock values must
-  not be written there.
-* **Late fields can only be filled, never changed.** Upserts use
-  `COALESCE(existing, new)` for `anchorId`, `aggregateRoot`, `hcsSequence` and
-  `hcsConsensusTs`. If an incoming non-null value differs from a stored
-  non-null value, the row is not changed and the write is reported as a
-  conflict (drift evidence).
-* **A DAR is also a tiered item.** If the DAR bundle and the tiered stub share
-  an `attestationId`, they merge into one row: DAR columns come from the DAR
-  bundle, anchor columns from whichever source has them. P6 step 1 confirms
-  whether the IDs are shared. If they are not, the DAR row stores the tiered
-  `attestationId` it was bridged into, in a new nullable `bridgedTo` column.
+* **Append-only.** A link line is never rewritten or removed, by P6 code or
+  by `reconcile-rt.py`. A value learned later is a new line, not an edit.
+* **Merge rule for readers.** Group link lines by `(id, anchorId,
+  hcsSequence)`. Only these fields are merged: `aggregateRoot`, `topic` and
+  `hcsConsensusTs`. For each of them, the first non-null value in file order
+  wins. A later non-null value that differs is a **conflict**. It is
+  reported, it does not change the merged result, and it is drift evidence.
+  `v`, `source` and `writtenAt` are per-line metadata. They are never merged
+  and never conflict; a group's age is its earliest `writtenAt`.
+* **Retries.** The retry drainer can publish one `anchorId` more than once
+  (§2.5). A first submit can also reach consensus while its receipt fails, so
+  the anchor job never links it, and only the retry is linked. One `(id,
+  anchorId)` can therefore have several `hcsSequence` groups, and they can
+  appear in any order (for example S2 from the retry, then S1 from the
+  backfill). **The attestation's anchor is the set of all its groups.** No
+  group is preferred, and a new group is never a conflict. Where one value
+  is needed for display, use the lowest sequence, computed fresh from the
+  whole set every time.
+* **One anchor per attestation.** Links from one `id` to two different
+  `anchorId`s are a conflict.
+* **`hcsConsensusTs` is only a consensus timestamp**, from the mirror or
+  `getRecord()`. It is never wall-clock time. The anchor job only has
+  `getReceipt()` (§2.3), so it writes `null`, and the mirror backfill (§3.4)
+  appends the value later. §6 O4 would let the anchor job write it directly.
+* **`hcsSequence` is a decimal string**, as `index-writer.ts` stores `seq`.
+* **Only genuine anchors.** Backfill links only messages that pass the D4
+  origin rule (§4.3 step 5).
 
-### 3.2 Migration and the TypeScript surface
+Reader compatibility (normative, and it **ships before the first link line is
+written**):
 
-* SQLite cannot drop `NOT NULL` in place. v1 → v2 is therefore a
-  per-shard table rebuild inside one transaction: create
-  `attestations_v2`, copy, drop, rename, then set `user_version = 2`.
-  Existing v1 rows become `bundleKind = 'dar'`, with `leafHash` recomputed
-  from the bundle by backfill (§3.5). Until then they hold the sentinel
-  `'unknown'`.
-* A shard opened read-only at v1 is still readable. A writer that finds v1
-  migrates the shard, and a writer that finds a version above 2 refuses to
-  write.
-* **`IndexRow` keeps its current shape.** It stays the DAR row returned by
-  `byDecisionId`, `byAgentRange`, `byAgentSchema` and `chainHead`, and those
-  queries add `WHERE decisionId IS NOT NULL`. New types `AttestationRow` and
-  `AnchorRow` cover the full columns. Downstream packages (`verify`,
-  `evidence`, `chain-fix`) therefore compile unchanged, and the release is a
-  minor bump.
-* New queries: `byAttestationId`, `byAnchorId`, `anchorsInRange(from, to)`,
-  `pending(olderThan)`.
+* Every reader listed in §3.1 treats a line with no `kind` as an attestation.
+  It skips any other `kind`. One helper does this
+  (`isAttestationLine(rec) = rec.kind === undefined`) and every reader calls
+  it.
+* `reconcile-rt.py` passes every line that has a `kind` field through
+  byte-identical, before it looks at `id`. Today it would add `rt` to a link
+  line (`:42-47`), because the line's `id` matches a bundle file.
+* `server.ts:216-221` loads the tail into `attestationQueryIndex` keyed by
+  `id`. A link line there would replace the real entry, so this reader uses
+  the filter too.
+* The filter assumes that no line has a `kind` key today. P6 step 1 confirms
+  this with a read-only count on production, run by a human. The count must
+  be 0.
+* **Growth.** About one extra line per tiered attestation per genuine
+  sequence, plus one more from the backfill when the anchor-job line has
+  `hcsConsensusTs: null`. So the file roughly triples for tiered traffic.
+  `auditor-endpoint.ts:95`, `credentials-endpoint.ts:73` and
+  `reputation-route.ts:486` `readFileSync` the whole file per request. P6
+  step 1 measures their latency on a synthetic file 3× the production line
+  count and size (no production data copied), and records it in the PR. P6 does not change those readers beyond the filter.
 
-### 3.3 Shard key per bundle type
+### 3.3 Write at anchor time
 
-| Bundle kind | `ts` (shard key) |
-|---|---|
-| dar | `dar.ts` (unchanged) |
-| tiered | `leafMessage.issued_at` |
-| direct | the attestation's issued time, as signed |
-| threshold | the record's issued time, as signed |
-| anchors table | `anchoredAt` from the anchor message |
+The anchor job is `tier2HCSWriter` (`aggregator/index.ts:232-295`). Once
+`publishTier2Anchor` has returned the sequence number (`:243`), the job
+already loops over the anchor's `flushId`s (`:253-259`) and reads each
+`WARM_STORE/bundles/stubs-<flushId>.json` in `backfillWarmAnchors`
+(`:101-118`). That stub file is the only place in scope with the covered
+attestation ids (`Tier2Anchor` has none, `tiered-aggregator.ts:71-82`).
 
-The shard key is always a signed or anchored timestamp, never the time the
-index row was written. The late-field updates in §3.4 find their row through
-`byAttestationId` / `byAnchorId` across shards. Queries that start from an
-anchor search shards from `anchoredAt − 1 day` to `anchoredAt`. Items are
-anchored after their issue time, and the tier-2 flush interval is far below a
-day.
+* In that loop, append one anchor-link line per stub `attestationId`, with
+  `source: "anchor-job"`. The retry drainer re-anchors through the same
+  `backfillWarmAnchors` call (`aggregator/index.ts:389`), so it writes links
+  the same way, with its own `hcsSequence`.
+* Write each flush's lines with **one append call per ≤ 64 KiB of whole
+  lines**, through a single new function `appendAnchorLinks` in
+  `index-writer.ts`. It uses the same `INDEX_PATH` and no other file.
+* **Non-fatal.** A failure is caught, logged and counted. It never fails,
+  delays or changes the anchor message, the anchor bundle, the warm-record
+  pointers or any signature. The HCS submit has already happened when the
+  links are written.
+* **A missing stub file** is counted (`linksSkippedNoStub`, next to the
+  existing `skippedNoStub`, `:102-110`), and backfill repairs it from warm
+  records (§3.4).
+* No new write hook anywhere else, and no new file. Tier-1, direct and
+  threshold lines keep their current writers and shapes.
 
-### 3.4 Write-time hook
+### 3.4 Historical backfill from the mirror
 
-The hook is a port in attest-index, so the rubric-protocol side stays thin:
+`scripts/anchor-links-backfill.mjs` in rubric-protocol, next to the writer,
+so it reuses `appendAnchorLinks`:
 
-```ts
-export interface IndexSink {
-  bundleWritten(e: BundleWrittenEvent): void;         // fire-and-forget
-  anchorWritten(e: AnchorWrittenEvent): void;         // tier-2 bundle written
-  anchorConfirmed(e: { anchorId: string; hcsSequence: number; hcsConsensusTs?: string }): void;
-}
-export function createIndexSink(indexDir: string, opts?: { onError?(err: unknown, e: unknown): void }): IndexSink;
+```
+anchor-links-backfill --store /mnt/tempus-attestation-store
+                      [--mirror https://mainnet-public.mirrornode.hedera.com]
+                      [--topic 0.0.10416909] [--since <iso>]
+                      [--anchor-payer <acct>]...   # default: the D4 list
+                      [--apply]                    # default is a dry run
 ```
 
-Call sites in rubric-protocol. Each one goes **after** the bundle file has been
-durably written, and adds one call:
+1. Page all topic messages (follow `links.next`, 429/5xx backoff, at most 5
+   retries per page). Apply the D4 origin rule per chunk, reassemble, and
+   keep `RUBRIC_TIER2_ANCHOR` messages.
+2. **Validate before any path is built.** The message's `anchorId`, and
+   later each `tier1Flushes[].flushId`, must match the lowercase UUID form
+   `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`. Both are
+   `randomUUID()` (`tiered-aggregator.ts:167, 489`). A value that does not
+   match is counted as `badId`, and nothing is read or written for it. Every
+   joined path is `resolve`d and must stay under the hot, warm or cold store
+   root, as `loadBundle` does (`decision-verify-route.ts:84-85`). Then find
+   `<anchorId>.json` (the tier-2 anchor bundle) in those stores. **Link only if the bundle's `aggregateRoot`
+   equals the message's.** A mismatch is reported and nothing is written.
+3. Get the covered attestation ids for each `tier1Flushes[].flushId`. Use
+   `stubs-<flushId>.json` if it still exists. Otherwise use warm records
+   whose anchor pointer names that `flushId`. Ids that cannot be resolved are
+   counted per anchor and never guessed.
+4. Append a link line with `source: "backfill-mirror"`, carrying the mirror's
+   `sequence_number` and `consensus_timestamp`. **Idempotent:** skip it if
+   the merged group `(id, anchorId, hcsSequence)` already has every field
+   non-null and equal. If an anchor-job line exists with
+   `hcsConsensusTs: null`, the backfill line is what fills it.
+5. Print JSON counts: `anchors`, `linksAppended`, `alreadyPresent`,
+   `unresolvedIds`, `noBundle`, `rootMismatch`, `badId`, `conflicts`.
 
-| Event | Call site |
-|---|---|
-| tiered `bundleWritten` | `onTier1Flush`, `src/aggregator/index.ts:297` (the full stub is available there) |
-| threshold `bundleWritten` | `threshold-endpoint.ts:500`, next to `appendIndexEntry` |
-| direct `bundleWritten` | `server.ts:692`, next to `indexEntry()` |
-| dar `bundleWritten` | `dar-emit.ts:501` (pending) and `:957-983` (enriched) |
-| `anchorWritten` | `tiered-aggregator.ts:503-509`, which also fills `anchorId` / `aggregateRoot` on that anchor's rows |
-| `anchorConfirmed` | `aggregator/index.ts:233-266`, where the sequence number is learned |
+Without `--apply`, it writes nothing and prints the same counts. It contacts
+only the mirror host. It runs while the writers run, so it follows the same
+append rules as §3.3.
 
-Failure behaviour (normative):
+### 3.5 attest-index ingests the jsonl
 
-1. **An index failure never fails, delays, or changes a bundle write or a
-   signature.** The hook runs after the write, catches everything, and calls
-   `onError`, which logs and increments a counter. It never rethrows.
-2. The sink holds no lock across signing. SQLite busy time is bounded with
-   `busy_timeout = 250 ms`. If it times out, the event is dropped and logged,
-   and backfill repairs it.
-3. Two processes write (§2.1). This relies on WAL plus `busy_timeout`, with
-   no in-process cache of shard state that assumes a single writer
-   (`Index.dayCache` must re-read the directory when a shard is missing).
-4. **Recording the consensus timestamp at submit time is out of scope.**
-   `publishTier2Anchor` stays on `getReceipt()`. Backfill fills
-   `hcsConsensusTs` from the mirror (§3.5).
+attest-index stays the day-shard SQLite cache that decision-verify queries
+(`decision-verify-route.ts:25, 126-143`). It stops being a separate source of
+anchor data. Its anchor columns come only from the jsonl.
 
-### 3.5 Backfill CLI
-
-`rubric-index-backfill <bundle-store-dir> <index-dir> [--kinds dar,tiered,direct,threshold,anchor] [--mirror <base-url>] [--since <iso>]`
-
-* It walks the store and recognises each bundle kind by shape. The recogniser
-  is one function per kind, each with fixture tests. Files that are not
-  bundles are counted as `skipped`, as today.
-* Re-running is idempotent and follows the merge rules in §3.1. The result
-  JSON adds `byKind: {kind: {files, written, failed, skipped}}` and
-  `conflicts`.
-* `--mirror` is an optional second pass. It fills `hcsSequence` and
-  `hcsConsensusTs` for rows and anchors still missing them, from mirror-node
-  topic messages matched on `anchorId`. Without `--mirror`, backfill makes no
-  network calls.
-* Backfill migrates v1 shards (§3.2) and replaces `leafHash = 'unknown'`.
+* **Schema v2 is additive.** `ALTER TABLE attestations ADD COLUMN` for
+  `anchorId`, `aggregateRoot`, `hcsSequences` (a JSON array of decimal
+  strings, ascending, one per group in §3.2), `hcsConsensusTs` (that of the
+  lowest sequence, or NULL) and `anchorConflict` (0/1), all nullable, with
+  `PRAGMA user_version = 2`. There is no
+  table rebuild and no new table. `IndexRow` keeps its shape, the four
+  existing queries keep their signatures, and a new `AnchoredRow` type
+  extends it. A writer refuses a shard whose `user_version` is above 2. A
+  read-only v1 shard is still queryable.
+* **`rubric-index-ingest <attestation-index.jsonl> <bundle-store> <index-dir>`.**
+  * It streams the jsonl, opened once and read to EOF so that an `os.replace`
+    mid-read cannot mix files. It ignores a trailing partial line.
+  * DAR rows are still built by `rowFromBundle` from the DAR bundle, because
+    the jsonl has no DAR fields. The anchor columns are filled from the
+    merged anchor-link groups (§3.2) for that row's tiered attestation id.
+  * Non-DAR attestation lines are counted, not stored. The jsonl is their
+    index.
+  * **Anchor columns are derived, not fill-only.** On every ingest they are
+    recomputed from the whole merged anchor-link set for the row (§3.2), so
+    they always equal what the jsonl says. A new retry group extends
+    `hcsSequences`, and does not conflict. A §3.2 conflict (two `anchorId`s,
+    or a field conflict) sets `anchorConflict = 1` and is reported. In that
+    case the columns hold the first-written values and are not trusted.
+    The resume cursor therefore covers only reading new lines. A row whose
+    link set gained a line is recomputed in full.
+  * It writes a resume cursor `{line, id}` after each run. If the line at
+    the cursor no longer has that `id`, it re-ingests from the start, which
+    is idempotent. Line numbers are stable across `reconcile-rt.py`, which
+    keeps line count and order.
+  * It never writes the jsonl.
+* **The DAR ↔ tiered id.** P6 step 1 confirms whether a DAR bundle and the
+  tiered stub it was bridged into share an `attestationId`
+  (`dar-emit.ts:960-976`). If they do not, add a nullable `bridgedTo` column
+  holding the tiered id, and join anchor links on it. Record the answer here.
+* **decision-verify reads the same data.** `decision-verify-route.ts` reads
+  the row's anchor columns through a new `byDecisionIdAnchored` query, in
+  the lookup block that runs before `gate()` (`:120-147`). Then:
+  * Both sides are compared as canonical decimal strings: `anchorRef.sequenceNumber`
+    may be a number (`dar-emit.ts:961`), and it is converted with
+    `String(BigInt(x))`. A value that is not a non-negative integer counts as
+    a mismatch.
+  * If `hcsSequences` is set and the bundle's `anchorRef.sequenceNumber` is
+    **not one of them**, or if `anchorConflict = 1`, the route returns
+    `503 {error: "anchor record conflict", decisionId, note: "payment not
+    settled"}` before `gate()`. That matches the existing pre-gate 503s
+    (`:123`, `:141`), so it never charges (rubric-protocol CLAUDE.md, paid
+    x402 routes).
+  * A retry-anchored DAR whose `anchorRef` records any one of the
+    sequences passes.
+  * If `hcsSequences` is NULL (no links yet), the route behaves exactly as
+    today.
+  * `anchorRef.root` is the DAR leaf L, not the `aggregateRoot`
+    (`dar-emit.ts:961-969`), so it is never compared with the index
+    `aggregateRoot`.
+  * The success response shape does not change.
+* The existing `rubric-index-backfill` bin keeps working. It never writes
+  the anchor columns.
 
 ---
 
@@ -481,12 +569,12 @@ mirror}, anchorPayers: {source: "keys-file" | "fallback", accounts} }`. The repo
 
 ### 5.1 Location and interface
 
-`tools/drift-check/drift-check.mjs` in this repo. It depends on
-`@rubric-protocol/attest-index` (workspace) for read-only index access and on
-nothing else from the service.
+`tools/drift-check/drift-check.mjs` in this repo. Its index side is the
+anchor-link lines in `attestation-index.jsonl` (§3.2), read directly. It does
+not depend on attest-index or on anything else from the service.
 
 ```
-drift-check --index <index-dir>
+drift-check --index <attestation-index.jsonl>
             [--mirror <base-url>] [--topic 0.0.10416909]
             [--since <iso> | --state <file>]   # resume point; default: last 24 h
             [--min-age 600]                    # seconds; anchors younger are ignored
@@ -494,8 +582,25 @@ drift-check --index <index-dir>
             [--json]
 ```
 
-It opens the index with `{ readonly: true }`. It makes no writes, except the
-`--state` file, and no calls to our API. It does not fetch the keys file:
+It opens the jsonl read-only, once per run, and reads that file descriptor to
+EOF, so a concurrent `reconcile-rt.py` replace cannot mix two files. It
+ignores a trailing line with no newline (an append in progress). It never
+writes, renames or locks the jsonl. It reads only `kind: "anchor-link"` lines
+and merges them by the §3.2 rule. The drift checks need one summary per
+`anchorId`: the `aggregateRoot` values, the set of `hcsSequence` groups with
+their merged `hcsConsensusTs`, the earliest `writtenAt`, and a conflict flag.
+The checks keep that summary, not per-attestation state. `LINK_CONFLICT` for
+one `id` across two `anchorId`s needs an `id → first anchorId` map. That map
+is the only per-attestation state, and full lines are never kept.
+
+**Index-side time.** Each `anchorId` summary has an `anchorTime`: the earliest
+merged `hcsConsensusTs` across its groups if any is non-null, otherwise its
+earliest `writtenAt`. Backfilled historical anchors carry their mirror
+consensus time, so they line up with mirror time. A recent anchor-job link
+(`hcsConsensusTs: null`) is written just after its submit, so `writtenAt` is a
+close upper bound.
+
+It makes no writes except the `--state` file, and no calls to our API. It does not fetch the keys file:
 without `--anchor-payer` it uses the same hardcoded list as the P7 fallback,
 currently `0.0.3923341`. If `--anchor-payer` is given, it replaces the default.
 Each value must match `^0\.0\.[0-9]+$`, or the run exits 2.
@@ -510,7 +615,29 @@ Each value must match `^0\.0\.[0-9]+$`, or the run exits 2.
    so a forged chunk never removes a genuine message. Keep only
    `RUBRIC_TIER2_ANCHOR` messages; other types from pinned payers are ignored.
 3. Drop anchors whose mirror `consensus_timestamp` is under `--min-age` old.
-4. Walk backward via `prevAnchorId` from each anchor that has one. Because of
+4. **Window.** The run checks the interval `(windowStart, cut]`, where `cut`
+   is now minus `--min-age`, and `windowStart` is one of:
+   * the `--state` file's `cut` from the previous run;
+   * `--since`;
+   * 24 h before now.
+
+   * The mirror side is the genuine anchors with `consensus_timestamp` in
+     the window.
+   * The index side is the `anchorId` summaries with `anchorTime` in the
+     window.
+   * Anchors outside the window are not checked, on either side.
+   * For an index-side `anchorId` that has no match in the window's mirror
+     messages, each of its `hcsSequence` groups is fetched by sequence
+     (`GET <mirror>/api/v1/topics/<topic>/messages/<sequence>`). For a chunk,
+     the neighbouring sequences up to ±20 (`setMaxChunks(20)`) are fetched to
+     reassemble it, and the D4 origin rule applies. Only then is a finding
+     reported.
+   * The same lookup applies to a mirror-side anchor whose link summary has
+     an `anchorTime` just outside the window.
+   * `--state` stores `{cut, lastSequence}`. The next run starts at that
+     `cut`, so an anchor is checked in exactly one run once it is older than
+     `--min-age`. A later run reports nothing for it again.
+5. Walk backward via `prevAnchorId` from each anchor that has one. Because of
    §2.4, an anchor without `prevAnchorId` is a **segment start**, not a gap.
    The walk resumes from the next-older anchor by sequence.
 
@@ -521,17 +648,21 @@ Each value must match `^0\.0\.[0-9]+$`, or the run exits 2.
 | `CHAIN_GAP` | `prevAnchorId` names an anchorId with no pinned-payer message on the topic (searching back past the window as needed). A link to an anchorId found only in `FOREIGN_PAYER` messages is a gap. | **yes** |
 | `CHAIN_FORK` | two anchors name the same `prevAnchorId` | **yes**, once O3 is resolved; a warning until then |
 | `SEGMENT_START` | anchor has no `prevAnchorId` | no, counted and reported |
-| `MISSING_FROM_INDEX` | anchor on the mirror (≥ min-age) with no `anchors` row | **yes** |
-| `MISSING_FROM_MIRROR` | `anchors` row with `anchoredAt` ≥ min-age old and no matching mirror message | **yes** |
-| `ROOT_MISMATCH` | same `anchorId`, different `aggregateRoot` (index vs mirror) | **yes** |
+| `MISSING_FROM_INDEX` | genuine anchor on the mirror, with `consensus_timestamp` in the window, and no anchor-link line for its `anchorId` anywhere in the jsonl | **yes** |
+| `MISSING_FROM_MIRROR` | an `anchorId` summary with `anchorTime` in the window, where neither the window's mirror messages nor the by-sequence lookup (§5.2 step 4) yields a genuine message matching it on `anchorId` and `aggregateRoot` | **yes** |
+| `ROOT_MISMATCH` | same `anchorId`, different `aggregateRoot` (anchor-link vs mirror) | **yes** |
+| `SEQ_MISMATCH` | for an `anchorId` in the window, an anchor-link group's `hcsSequence` is not, after the by-sequence lookup, the sequence of a genuine mirror message with that `anchorId` and `aggregateRoot`, or its merged non-null `hcsConsensusTs` differs from that message's. Checked per group. A genuine mirror sequence with no group is not `SEQ_MISMATCH`; the backfill adds it, and until then it is `INDEX_PENDING`. | **yes** |
+| `LINK_CONFLICT` | the §3.2 merge rule finds a conflict: one `id` linked to two `anchorId`s, or two different non-null values for one field in one group | **yes** |
 | `DUPLICATE_ANCHOR` | several mirror messages share an `anchorId`, all with the same `aggregateRoot` (retry) | no, a warning |
 | `DUPLICATE_ANCHOR_CONFLICT` | several mirror messages share an `anchorId` with different `aggregateRoot`s | **yes** |
 | `FOREIGN_PAYER` | any message or chunk on the topic, of any type, whose `payer_account_id` is not in the pinned anchor-payer list (D4) or, when `chunk_info` is present, differs from the account in its `initial_transaction_id`. One finding per chunk. Excluded from all chain and index checks; it never removes a genuine message. | **yes** |
-| `INDEX_PENDING` | index anchor matched on the mirror but `hcsSequence` is NULL in the index | no, a warning (backfill `--mirror` fixes it) |
+| `INDEX_PENDING` | an anchor-link group matched on the mirror, but its merged `hcsConsensusTs` is still null (the anchor job writes `null` until O4). Also, a genuine mirror sequence for a linked `anchorId` that has no group yet (an unlinked retry). | no, a warning (the §3.4 backfill fixes it) |
 
 Messages are attributed to an `anchorId` by message content. For
-`MISSING_FROM_MIRROR`, a mirror message within the window must match on both
-`anchorId` and `aggregateRoot`.
+`MISSING_FROM_MIRROR`, a mirror message (from the window or the by-sequence
+lookup) must match on both `anchorId` and `aggregateRoot`. The by-sequence
+lookups use the same host, backoff and retry limit as paging. If a lookup
+fails, the run exits 3, never 1.
 
 ### 5.4 Exit codes
 
@@ -539,7 +670,7 @@ Messages are attributed to an `anchorId` by message content. For
 |---|---|
 | 0 | no drift findings |
 | 1 | at least one drift finding |
-| 2 | usage / index unreadable |
+| 2 | usage / jsonl unreadable |
 | 3 | mirror unreachable or incomplete (pagination broke, 429 after retries); **not** reported as drift |
 
 Mirror access uses exponential backoff on 429/5xx, at most 5 retries per page.
@@ -556,19 +687,31 @@ O1 and O2 go to the board subagent, since they change published formats.
 | O1 | Should records embed the batch → aggregate path and `anchorId`, so P7 can verify from one file? | P7 single-file mode only; P7 as specified works without it |
 | O2 | Should the keys file get an append-only key history and an on-chain hash of each key set (the `trust-anchor.json` model)? Without it, bundles signed before a rotation report `KEY_NOT_PUBLISHED`, and trust in the keys file reduces to TLS on rubric-protocol.com. | P7 verifying rotated keys |
 | O3 | Do several regional aggregators publish to topic `0.0.10416909`? If yes, what is the chain key (the anchor message carries no region)? | P8 `CHAIN_FORK` as drift |
-| O4 | Should `publishTier2Anchor` move to `getRecord()` so the consensus timestamp is recorded at submit? (Today `/v1/verify` reports the wall-clock `anchorConfirmedAt` as `consensus_timestamp`, `server.ts:1332-1333`.) | nothing in P6–P8; tracked as a separate finding |
+| O4 | Should `publishTier2Anchor` move to `getRecord()` so the consensus timestamp is recorded at submit? (Today `/v1/verify` reports the wall-clock `anchorConfirmedAt` as `consensus_timestamp`, `server.ts:1332-1333`.) With it, the anchor job could write `hcsConsensusTs` in the anchor-link line itself. | nothing; without it, anchor-links get the consensus timestamp from the §3.4 backfill, and P8 reports `INDEX_PENDING` until then |
 | O5 | Should the retry drainer keep `prevFederationSigHash`/`prevAnchorId` (`aggregator/index.ts:370-383`)? Today a retry creates a `SEGMENT_START`. | nothing; reduces P8 noise |
 | O6 | **Closed, see D4.** The topic has `submit_key: null` and `admin_key: null` (immutable, no key ever). Origin is a pinned payer list, currently `0.0.3923341`, published as `anchorPayers` in the keys file, with a hardcoded fallback in the verifier. Board review of the published field is part of `tasks/P7a-anchor-payers.md`. | — |
+| O7 | `reconcile-rt.py` rewrites the `rt` field of earlier jsonl lines and `os.replace`s the file (§3.1). That breaks D5's "append-only" for attestation lines. Also, a line appended between its tail read and its replace is lost, because the writers don't take its lock. Should `rt` move out of the jsonl (for example, a sidecar keyed by `id`), or should the writers share its lock? P6 only makes it pass link lines through untouched. A lost link line is re-appended by the §3.4 backfill on its next run, and P8 reports `MISSING_FROM_INDEX` until then. | nothing in P6 as written; closes the lost-append window |
 
 ---
 
 ## 7. Sequencing
 
 * **P7 does not depend on P6** and can start first, or run in parallel.
-* **P8 depends on P6**, because it needs the `anchors` table.
+* **P8 depends on P6**, because it needs anchor-link lines in the jsonl.
+* Within P6, the order is fixed:
+  1. the reader filter and the `reconcile-rt.py` passthrough are deployed;
+  2. then the anchor job writes links;
+  3. then the mirror backfill runs with `--apply`;
+  4. then attest-index ingest and the decision-verify change ship.
+
+  No anchor-link line may reach the production jsonl before step 1 is live.
 * P6 changes rubric-protocol hot paths. Its rubric-protocol PR follows that
   repo's CLAUDE.md, including tests against the compiled build.
 
-Reviews per phase: `crypto` for P7 and for the P6 hook placement,
+Anchor-link lines can never be removed from the production jsonl, so turning
+on the anchor-job writer and the first `--apply` backfill against production
+are hard to reverse. Each one goes to the board first and is run by a human.
+
+Reviews per phase: `crypto` for P7 and for the P6 anchor-link placement,
 `spec-guardian` for anything touching DAR, and `safety-reviewer` before every
 commit.
