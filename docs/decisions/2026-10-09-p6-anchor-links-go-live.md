@@ -12,12 +12,234 @@ Anchor-link lines can never be removed from `attestation-index.jsonl` (D5).
 So each step is irreversible, and each is run by a human. This record does
 not flip the flag or run apply.
 
-The board has ruled four times. Round 4 (below) is in force, and the
-Conditions section is the round 4 text. Round 4 was ruled on rubric-protocol
-PR 69 (merged to main at `c22dd75d`), a socket check of Redis on all five
-nodes, and a stamped US dry run. Rounds 1–3 are kept underneath as history.
+The board has ruled five times. Round 5 (below) is the final round and is
+in force, and the Conditions section is the round 5 text. Round 5 was ruled
+on rubric-protocol PR 70 (merged to main at `1eccc1ea`) and PR 72 (merged to
+main at `54afb5a1`), a raw per-host Redis socket capture
+(`~/p6-redis-raw.txt`), a stamp capture (`~/p6-stamps.txt`), a stamped US
+dry run (`~/p6-dryrun-stamped.txt`, 21:07:12Z), and the operator's M39
+incident record. Rounds 1–4 are kept underneath as history.
 
-## Verdict (round 4, in force)
+## Verdict (round 5, final, in force)
+
+| Item | Ruling |
+|---|---|
+| A: writer flag (US only) | **NO-GO.** GO WITH CONDITIONS on US only once 0.1–0.7 (round 5 text) are recorded as raw command output against `54afb5a1`. |
+| B: first US `--apply` | **NO-GO** until Stage 1 passes, 2.2 passes as written, and 2.3 (round 5 text) passes. |
+| C: satellites | **Staged; NO-GO for every satellite** until 3.1 passes. US first, then one node at a time. |
+
+| Item | Director | Risk | Vote |
+|---|---|---|---|
+| A | Acquirer | For the fourth round, no artifact ties the running US `dist` to a reviewed commit. The only copy of `54afb5a1` is a hand-typed header. | HOLD |
+| A | Standards reviewer | With the flag on, a retry by the M39 drainer would write permanent links to an anchor that has no `zkAggregateRoot` and no prev link. If the original send had in fact landed, the retry would also put a second HCS message under the same `anchorId`. | HOLD |
+| A | Compliance buyer | PR 72 went in against its own "DO NOT MERGE until board" gate. An auditor would read that as a change-control bypass on an irreversible surface. | HOLD |
+| B | Acquirer | The dry run is within every bound, but its header fails 2.3 again, and no full-hash target exists for the script at `54afb5a1`. | HOLD |
+| B | Standards reviewer | The region tally reads `issuer_node_region` without checking the signature, which is a claim and not an attestation. 2.2 asks for the signed field or a key check. | HOLD |
+| B | Compliance buyer | Root-cause facts (the submission times) still come from operator statements. No stub-file read was captured. | HOLD |
+| C | Acquirer | The 1.12M `notInIndex` gap has no written root cause, so the fleet's index coverage can't be described to a buyer. | HOLD |
+| C | Standards reviewer | 0.2 has not been re-taken after the deploy, and the satellites' signer tallies don't exist. | HOLD |
+| C | Compliance buyer | There is no 7-day clean US record, because B has not happened. | HOLD |
+
+Round 5 is real progress. PR 70 adds the exclusion list. The stamped dry run
+shows that list removing exactly the 19 fixture ids and nothing else. Every
+count stays inside the re-pointed 2.3 bounds. The socket capture now has
+per-host raw lines for all five nodes. The bundle race is fixed in code.
+
+Three things remain:
+- **No proof of the deployed build.** The stamps were taken 2h11m before the
+  merges, and no artifact names `817e6242cdf5`.
+- **PR 72 was merged without a board ruling.** It turned on a publish path
+  that had never run. That path produces anchors with gaps and can duplicate
+  an anchor, and with the flag on it would write permanent links to them.
+- **The region tally is unsigned.**
+
+The one condition that flips A is Stage 0 (round 5 text, 0.1–0.7) recorded
+in #56 as raw command output against `54afb5a1`. That includes the M39
+drainer being unable to publish while the flag is on (0.7). This is the
+final round: see "Final-round disposition".
+
+## Round 5 evidence, and how it was weighed
+
+| Evidence | Weight |
+|---|---|
+| PR 70 merged (`1eccc1ea`, 20:53:09Z): 19-id exclusion at three sites, `patchTier2Bundle` at three sites, `/code-review high` of PR 69's diff (9 findings), region tally | **Code accepted in principle, not verified at the merge.** `patchTier2Bundle` re-reads, patches and writes atomically, all synchronously (`tier2-bundle.ts:24-30`, read in the PR 70 worktree). The review covers PR 69's diff. **PR 70's own diff has no `/code-review high`** (finding 33). |
+| PR 69 review findings 5, 8, 9 not acted on, with reasons | **Accepted as recorded in PR 70's body.** |
+| Equivalence 20/20 ALL PASS (1816) on `e619e3af` (tree `ab425e56`) | **Accepted for that tree.** It counts for `54afb5a1` only if the diff between them leaves the suite's imports untouched (finding 40). |
+| Safety-reviewer BLOCK, then PASS on `ab425e56`, then PASS on delta `617f086f` (PR 70) | **Partial.** Nothing maps `617f086f` to `1eccc1ea` or `54afb5a1`. PR 72's PASS is on its own staged diff, not on the merged tree. |
+| PR 72 merged (`54afb5a1`, 20:53:13Z): M39 drainer ESM `createHash` fix | **The code fix is accepted. The merge decision is not ratified** (findings 35–37). |
+| M39 incident (PR 72 comment, operator-measured): `ZK_PAYLOAD_V2=1` in aggregator pm2 env; 4 dead letters, US only; `4e222127`, `ecc29f3c`, `0c71d8ac` already anchored at HCS seq 289552–289554, confirmed on mirror, stale entries removed; `b9e7aa1a` (2026-08-29, 2 items, `rubric-assert` and `rubric-canary` only) unanchored and parked | **Operator-stated, with no artifact.** `pm2 env` was the source, which 0.2 forbids (finding 38). If confirmed (0.7 mirror query), the 3 already-anchored entries would show the duplicate-anchor risk (finding 35). |
+| Deployed: fleet digest `817e6242cdf5` on all five nodes, commit `54afb5a1` (operator-stated) | **Rejected as evidence.** It is in no file. `~/p6-stamps.txt` (18:42:33Z) shows `c22dd75d` / `aed6b5fbadb1`, taken before both merges (finding 27). |
+| `~/p6-stamps.txt`: `cat: .deployed-sha: No such file or directory` on US | **Ambiguous.** The path is relative and the shell's working directory isn't shown (finding 28). |
+| `~/p6-redis-raw.txt` (17:50Z, all five hosts) | **Substantive result accepted as pre-deploy evidence. Not 0.2 for the deployed build** (finding 30). Every listener is `redis-server` on loopback only (127.0.0.1, plus [::1] on the satellites). Every aggregator connection goes to `127.0.0.1:6379`. Every client name starts `"node`. `SHARED_REDIS_HOST` count is 0 on all five. |
+| Stamped dry run, `~/p6-dryrun-stamped.txt` (`vultr`, 21:07:12Z, `exit=0`) | **Accepted as a real run with the PR 70-era script** (its output has `excluded`, `excludedList` and `issuerNodeRegion`), and as planning evidence. It is not the 2.3 pre-apply run. Its header is hand-typed again, with a 16-hex prefix (finding 29). |
+| `issuerNodeRegion`: 100% `us` (31871 flushes, 76529 links) | **Partial.** The field is read without checking the signature, and 2.2 requires a check (finding 31). |
+| `00949ddc` root cause (#62 merged 2026-10-09 10:36:44Z; `m42-golden` submissions 2026-07-14 21:37Z, operator-stated) | **Narrowed.** The merge time (board-verified in round 4) postdates the submissions by about three months, so #62's deploy time no longer matters. Only the submission times still need an artifact (finding 32). |
+| 0.4, 0.5 (rest), 0.6 | **Not supplied. Not met.** |
+
+Dry-run figures, recomputed by the board from the file:
+- anchors 35926; `linksAppended` 76529; `bytesToAppend` 27397382, which is
+  358.0 bytes per link.
+- `alreadyPresent` 0; `excluded` 22 / `excludedIds` 19.
+- `notThisFlush` 2000 / 38 pairs / 19 ids. All 38 entries are
+  `warm-other-flush` with `recordFlush` `acc07fd1…` and `recordAnchorId`
+  `00949ddc…`. All 2022 `seq` references are `276440`: 2000 + 22, which
+  matches 1000 + 1000 + 22.
+- The exclusion set is exactly the `notThisFlush` id set.
+- `incompleteMessages` 23; `noBundle` 6949; `indexIds` 103951;
+  `indexAttestationLines` 105954 (2003 duplicates, unchanged);
+  `notInIndexIds` 1121882 (unchanged).
+- `conflicts`, `rootMismatch`, `badId`, `malformedMessages`, `linkErrors`,
+  `unresolvedIds` and `foreignChunks` are all 0.
+- Re-pointed bounds: 76349 to 76349 + (103951 − 103758) = 76542. 76529 is
+  inside.
+
+## Round 5 findings
+
+27. **No artifact identifies the deployed build, for the fourth round.**
+    `~/p6-stamps.txt` was taken at 18:42:33Z and shows HEAD `c22dd75d` and
+    digest `aed6b5fbadb1` on all nodes, 2h11m before PRs 70 and 72 merged.
+    `817e6242cdf5` appears in no file. `54afb5a1` appears only in the
+    hand-typed dry-run header. The capture has no `dist/api`+`dist/aggregator`
+    hash, no porcelain and no aggregator start time. 0.3 is not shown for any
+    commit.
+28. **The "no `.deployed-sha` on US" lines don't prove absence.**
+    `cat .deployed-sha` used a relative path, and the capture doesn't show its
+    working directory. 0.3 now uses absolute paths only.
+29. **The stamped dry run would pass every re-pointed 2.3 count, and it
+    confirms finding 24.** The exclusion removes 22 occurrences over 19 ids,
+    all in `acc07fd1` at seq 276440. Three ids appear twice there
+    (`fe556adb…`, `8b3bc4fb…`, `1b69ceaf…`), which explains round 4's
+    `alreadyPresent` 3 and today's 0. The header is still typed by hand with
+    a 16-hex prefix. The 2.3 target `f64e1c3a…` describes the `c22dd75d`
+    script and is retired. The new target is the full sha256 of the script at
+    `54afb5a1`, recorded at 0.3. The prefix `36dabae723fb4b68` must be its
+    first 16 hex characters.
+30. **The 0.2 result is favorable on all five nodes, but it describes
+    processes that are gone.** The aggregator pids at 17:50Z (for example
+    `1647137` on `vultr`) predate the deploy. The commands are not in the
+    capture, and the host headers were not produced by `hostname`. The client
+    lines are cut off at `users:(("node`. There are no `rubric-proof` cluster
+    sockets (PR 70 runbook fix 1) and no widened `.env` check (fix 7). The
+    board adopts both runbook fixes into 0.2.
+31. **The region tally does not meet 2.2.** `issuerNodeRegion` reads
+    `envelope.issuer_node_region` without checking the signature (PR 70
+    body), so any writer to the bundle can set it. 2.2 is an attestation
+    check, not a likelihood check. It is met by checking the envelope
+    signature before reading the field, or by matching each stub's
+    `publicKey` against US key history.
+32. **#62's deploy time no longer matters, and with the exclusion most 2.3
+    root-cause items drop as B blockers.** #62 merged 2026-10-09 10:36:44
+    UTC, and nothing can be deployed before it exists. Cause (b) of finding
+    25 is ruled out for these ids if the 2026-07-14 submission times are
+    confirmed from the stub files. B writes no link for any of the 19 ids, so
+    the one-internal-key or request-log evidence, the M42b deploy time and
+    the #62 deploy record no longer block B. Two items remain: the raw
+    per (id, flush) `issuedAt` and `payloadHash` read from the stubs, and a
+    statement that no id was ever given to a customer.
+33. **PR 70's and PR 72's own diffs have no `/code-review high`, the fourth
+    time** (findings 1, 15, 18). PR 70 changes new writer code (the exclusion
+    at the anchor job and the `appendAnchorLinks` backstop) and the bundle
+    write in `flushTier2`'s federation patch. PR 72 changes what gets
+    published to HCS. Both are "anything signed or anchored" under
+    rubric-protocol `CLAUDE.md`.
+34. **`patchTier2Bundle` fixes finding 19 within one process, subject to
+    review.** It is synchronous from read to rename, so no writer inside the
+    aggregator process can interleave. The review must still cover whether
+    any other process writes tier-2 bundles, what happens to a leftover temp
+    file after a crash (a fixed-name `wx` temp would fail every later write),
+    and whether the directory is fsynced after the rename.
+35. **The fixed drainer can publish the same anchor twice.** It publishes
+    first and only then checks `bundle.seqNum`. If an original send landed on
+    HCS but was reported as failed (for example on a receipt timeout), the
+    bundle has no seq and the drainer publishes the same `anchorId` again.
+    The 3 dead letters the operator reports as already anchored at seq
+    289552–289554 (operator-stated, no artifact; finding 38) would be this
+    case. Before PR 72, the drainer threw at `require('crypto')` before it
+    published. So PR 72 switched on a publish path that had never run in
+    production, and, on the operator's unverified account, its first targets
+    would have been duplicates.
+36. **PR 72 ties the federation-chain gap to A.** The drainer passes
+    `undefined` for `zkRoots` and `zkAggregateRoot`, and nothing for
+    `prevFederationSigHash`/`prevAnchorId`. With the flag on, a retry
+    re-anchor writes permanent links to that anchor. Under option (a) with
+    the flag off, a gap stays on HCS only. With A on, it also enters the
+    index for good.
+37. **PR 72 was merged against its own gate, and the board was not asked.**
+    Its title and body said "DO NOT MERGE until a human/board decision
+    (anchoring)", and the workspace rules require the board before anything
+    hard to reverse. Each drainer publish is irreversible. This is a
+    governance finding against the record, not a code defect.
+38. **The M39 incident record has no artifact, and part of it was gathered
+    the way 0.2 forbids.** `ZK_PAYLOAD_V2=1` came from `pm2 env`, which
+    prints private keys; its definition is in `ecosystem.config.cjs`, so read
+    it there. The mirror check of the 3 entries, the dead-letter list on all
+    5 nodes, and the removal of 3 entries were not captured. The removed
+    entries can't be recovered unless they were captured.
+39. **`b9e7aa1a` is inert while parked, and dangerous if re-driven.** The
+    drainer only pops `rubric:tier2:retry`. The dead list is only pushed to.
+    Pushed back onto the retry list under (a), it becomes a gap anchor, and
+    with the flag on it would also get permanent links. Its "internal only"
+    status rests on `sourceId`, which the caller writes (finding 25).
+40. **The tested tree and the deployed tree are not shown to be the same.**
+    The equivalence run and the PASS cover `ab425e56` (`e619e3af`) and a
+    delta `617f086f`. `54afb5a1` adds PR 72 at least. Ancestry of `1eccc1ea`
+    → `54afb5a1` is stated in PR 72's body, not shown.
+41. **Disposition after the final round.** Unmet conditions leave a
+    standing NO-GO, and the decision returns to the operator. No round 6 is
+    scheduled. See "Final-round disposition".
+
+## Gate scorecard (round 5, final, in force)
+
+| Gate | Score | Reason |
+|---|---|---|
+| 0.1 | PARTIAL | PR 69 reviewed at high with reasons recorded. RMW race fixed in code. Exclusion landed. Equivalence 20/20 on `ab425e56`. Open: `/code-review high` of PR 70 and PR 72 diffs, mapping of PASS and tested tree to `54afb5a1`, #67 tree check. |
+| 0.2 | PARTIAL | Raw per-host lines for all five nodes show a loopback-only `redis-server` and loopback aggregator connections. Captured before the deploy, commands not shown, no `rubric-proof` sockets, no widened `.env` check, client names cut off. |
+| 0.3 | NOT MET | No artifact for `54afb5a1` or `817e6242cdf5`. Stamps predate the merges. |
+| 0.4 | NOT MET | Not supplied. |
+| 0.5 | PARTIAL | Unchanged from round 4. |
+| 0.6 | NOT MET | Not supplied. |
+| 0.7 (new) | NOT MET | No M39 artifacts. The drainer can publish with the flag on. |
+| 1.1–1.3 | NOT MET | Not started, which is the correct order. |
+| 2.1 | MET | Real runs, the latest at 21:07:12Z. |
+| 2.2 | PARTIAL | Tally run and 100% `us`, but the region field is unsigned. |
+| 2.3 | NOT MET | Counts within bounds (planning only). Header hand-typed, no full-hash target, root-cause stub read not captured, note not recorded, no list of drainer anchors. |
+| 2.4 | NOT MET | Not run. |
+| 3.1 | NOT MET | 0.2 not re-taken. No `notInIndex` root cause. No 7 clean days. |
+| 3.2 | NOT MET | Follows 3.1. |
+
+## Rulings on PR 72 and `b9e7aa1a` (round 5)
+
+**(i) PR 72 merged under option (a).** The board accepts the ESM fix as
+code. It does not ratify the merge decision, records finding 37, and does
+not treat option (a) as standing policy.
+- **Flag off.** Option (a) stays the operator's decision. It must be
+  recorded as a signed acceptance in PR 72 naming both consequences: the
+  chain gap (finding 36) and the duplicate-anchor risk (finding 35). Keep a
+  gap register in `docs/specs/attestation-index-and-replay.md` listing every
+  anchor the drainer publishes.
+- **Effect on A.** Option (a) is not acceptable once the flag is on. A
+  requires 0.7. A signed acceptance alone does not meet 0.7.
+- **Effect on B.** 2.3 must list every drainer anchor published since the
+  deploy, and must show no `anchorId` on two complete messages.
+
+**(ii) `b9e7aa1a`.**
+- **Before A:** record the raw dead-letter list on all 5 nodes and the item
+  ids of `b9e7aa1a`, confirm its bundle has no `seqNum`, and add it to the
+  spec as "unanchored, parked".
+- **While the flag is on:** it must not be pushed back onto
+  `rubric:tier2:retry` unless 0.7 path (1) has landed.
+- **After A,** one of these, recorded as a raw artifact:
+  - **retire it.** **Irreversible production Redis write, run by a human.**
+    Record it as permanently unanchored, with ids and payload hashes, then
+    remove it, capturing the raw `LRANGE` before and after. decision-verify
+    reports its 2 items as unanchored.
+  - **re-drive it** after option (b) and the mirror check have landed.
+    **Irreversible HCS publish, run by a human.** It then becomes an
+    ordinary late anchor for B or the anchor job.
+
+  Re-driving it under (a) with the flag on is a NO-GO.
+
+## Verdict (round 4, superseded)
 
 | Item | Ruling |
 |---|---|
@@ -40,8 +262,8 @@ were not supplied, and 0.3, 0.4 and 0.6 were not supplied at all. The
 possible only before #62 was deployed, or through a path that skips the
 claim. The deploy time that decides between them is missing.
 
-The one condition that flips A is Stage 0 (0.1–0.6, round 4 text), recorded
-in #56 as raw per-host command output against `c22dd75d`. B's deciding fact
+The one condition that flipped A in round 4 was Stage 0 (0.1–0.6, round 4
+text), recorded in #56 as raw per-host command output against `c22dd75d`. B's deciding fact
 is separate: the UTC time #62 went live on US, compared with the 2026-07-14
 21:37 UTC submissions of the 19 `m42-golden` ids (operator-stated).
 
@@ -140,7 +362,7 @@ writes one link per id through `acc07fd1` (finding 24).
     production index and on mainnet. An erratum is required if (b) holds, or
     if any of the 19 ids was ever given to a customer.
 
-## Gate scorecard (round 4, in force)
+## Gate scorecard (round 4, superseded)
 
 | Gate | Score | Reason |
 |---|---|---|
@@ -371,36 +593,49 @@ indexAttestationLines 105718, indexIds 103715.
 
 ## Conditions
 
-All of these run on US. Repeat them per satellite only at Stage 3.
+All of these run on US. Repeat them per satellite only at Stage 3. This is
+the round 5 text: 0.1, 0.2, 0.3, 1.2, 1.3, 2.2 and 2.3 are amended, and 0.7
+is new.
 
 ### Stage 0: gates for both A and B
 
-- [ ] 0.1 Review and tests, against `c22dd75d` (rubric-protocol PR 69).
-      - *Met in PR 69:* `/code-review high` on #68's own diff
-        (`32703b74^..32703b74`), 10 findings with outcomes.
-      - In PR 69, record the reason for each review finding not acted on (1,
-        6, 8, 9) and for the part of review finding 7 not acted on.
-      - Run `/code-review high` on PR 69's own changes to `src/` and
-        `scripts/anchor-links-backfill.mjs` (`32703b74..c22dd75d`) and record
-        the findings in PR 69. The fixes for review findings 2, 3, 4, 5 and
-        10 are new writer and backfill code.
-      - Record which staged diff the safety-reviewer PASS covers. It counts
-        only if that diff is the one merged at `c22dd75d`.
-      - Confirm in #67 that its head `93bd6b66` and its merge `7fcaf65b`
-        have the same tree.
-      - Read-modify-write race on the tier-2 bundle, at `index.ts:93-105`
-        and in the retry drainer at `index.ts:212-241`: fix both with a
-        locked or atomic write, or record a signed acceptance that names
-        both sites.
-      - Run `tests/index-readers/equivalence.test.mjs` 20 times against a
-        compiled `c22dd75d` and record every failure with its failing case.
-        One run is not 20.
+- [ ] 0.1 Review and tests, against `54afb5a1`.
+      - *Met:* `/code-review high` of #68 (recorded in PR 69) and of PR 69's
+        diff (recorded in PR 70), with reasons for findings not acted on.
+      - Run `/code-review high` on `c22dd75d..1eccc1ea` (PR 70) and
+        `1eccc1ea..54afb5a1` (PR 72), and record each in its PR. The reviews
+        must cover finding 34 (other bundle writers, leftover temp after a
+        crash, directory fsync), finding 35 (publish before persist), and
+        the exclusion backstop in `appendAnchorLinks`.
+      - Record `git rev-parse e619e3af^{tree} 1eccc1ea^{tree} 54afb5a1^{tree}`,
+        `git merge-base --is-ancestor 1eccc1ea 54afb5a1; echo $?`, and the
+        commits `617f086f` is a delta from and to. A PASS counts only for a
+        tree it covers. PR 72 needs its own PASS on the merged tree.
+      - Record `git diff --name-only e619e3af 54afb5a1`. If any listed file
+        is imported by `tests/index-readers/equivalence.test.mjs`, run it 20
+        times against a compiled `54afb5a1` and record every failure with its
+        failing case. Otherwise the 20/20 on `ab425e56` counts.
+      - Record `git rev-parse 93bd6b66^{tree} 7fcaf65b^{tree}` (#67).
+      - *Met in code (finding 34):* the tier-2 bundle RMW race at all three
+        sites, subject to the review above.
 
       Build and test in a separate scratch checkout (for example a git
       worktree under `/tmp`), never in `/root/tempus`. If a failure shows an
       id in the id set that has no attestation line, A is NO-GO.
 - [ ] 0.2 On each of `vultr`, `rubric-node-sg-1`, `rubric-node-jp-1`,
-      `rubric-node-ca-1` and `rubric-node-eu-1`, record the raw output of:
+      `rubric-node-ca-1` and `rubric-node-eu-1`, **after the deploy of
+      `54afb5a1`**, record one capture with the commands in it:
+      `{ set -x; hostname; date -u +%FT%TZ; ps -o lstart= -p "$(pm2 pid rubric-aggregator)"; ss -tnp | grep "pid=$(pm2 pid rubric-aggregator),"; for p in $(pm2 pid rubric-proof); do ss -tnp | grep "pid=$p,"; done; ss -tlnp 'sport = :6379'; ss -tnpH 'dport = :6379' | grep -oE 'users:\(\("[^"]+"' | sort | uniq -c; grep -cE '^\s*(export\s+)?SHARED_REDIS_(HOST|PORT)=' /root/tempus/.env; grep -E '^\s*(export\s+)?REDIS_(HOST|PORT)=' /root/tempus/.env; echo "grep_exit=$?"; } 2>&1`
+      **Pass for A (round 5):** the aggregator and every `rubric-proof`
+      instance connect only to `127.0.0.1:6379`; the listener is
+      `redis-server`, bound to loopback only; no client is named `sshd`,
+      `ssh`, `stunnel` or `socat`; the `SHARED_REDIS_*` count is 0; any
+      `REDIS_HOST` line is `127.0.0.1` or `localhost`, and any `REDIS_PORT`
+      line is `6379`. Empty aggregator output, or an aggregator start time
+      earlier than the deploy, fails the node. The round 4 text below
+      stands for everything else.
+
+      Round 4 text, kept: record the raw output of:
       - `hostname`
       - `ss -tnp | grep "pid=$(pm2 pid rubric-aggregator),"`
         (rubric-protocol `docs/ATTESTATION-ID-OWNERSHIP.md`). This is the
@@ -429,28 +664,33 @@ All of these run on US. Repeat them per satellite only at Stage 3.
       least need the anchor-job path to refuse a link when an id has
       neither a warm nor a cold file, and every path that enqueues to
       `rubric:tiered:stream` shown to go through the claim script.
-- [ ] 0.3 On US (`vultr`), read-only. **Never run `sync-all.sh` for this: it
-      ships to and builds on all four satellites.** Record the raw output of:
+- [ ] 0.3 On US (`vultr`), read-only, one capture with the commands in it,
+      absolute paths only. **Never run `sync-all.sh` (it ships to and builds
+      on all four satellites) or `deploy.sh` (it builds and restarts
+      production in `/root/tempus`) for this.** Record the raw output of:
       - `hostname`
-      - `git -C /root/tempus rev-parse HEAD`: `c22dd75d` in full, or a later
-        commit whose
-        `git rev-parse HEAD:src HEAD:package.json HEAD:package-lock.json HEAD:tsconfig.json HEAD:ecosystem.config.cjs`
-        output is identical to `c22dd75d`'s.
-      - `git -C /root/tempus status --porcelain -- src package.json package-lock.json tsconfig.json ecosystem.config.cjs`:
+      - `git -C /root/tempus rev-parse HEAD`: `54afb5a1` in full, or a later
+        commit whose tree for `src`, `scripts/anchor-links-backfill.mjs`,
+        `package.json`, `package-lock.json`, `tsconfig.json` and
+        `ecosystem.config.cjs` is identical to `54afb5a1`'s.
+      - `git -C /root/tempus status --porcelain -- src scripts package.json package-lock.json tsconfig.json ecosystem.config.cjs`:
         prints nothing.
       - `cat /root/tempus/.deployed-sha /root/tempus/.deployed-inputs` and
         `stat -c '%y' /root/tempus/.deployed-sha`. The sha equals HEAD. The
         inputs value equals
         `git -C <scratch> rev-parse HEAD:src HEAD:package.json HEAD:package-lock.json HEAD:tsconfig.json HEAD:ecosystem.config.cjs | sha256sum | cut -c1-16`
-        (the computation in `deploy.sh`). **Never run `deploy.sh` for this:
-        it builds and restarts production in `/root/tempus`.**
-      - `ps -o lstart= -p $(pm2 pid rubric-aggregator)`: later than the
-        stamp's mtime, because `deploy.sh` ignores a failed restart.
+        (the computation in `deploy.sh`).
+      - `ps -o lstart= -p "$(pm2 pid rubric-aggregator)"`: later than the
+        stamp's mtime.
+      - `sha256sum /root/tempus/scripts/anchor-links-backfill.mjs`: equal to
+        `git -C <scratch> show 54afb5a1:scripts/anchor-links-backfill.mjs | sha256sum`,
+        and beginning `36dabae723fb4b68`. This full value is the 2.3 target.
       - `(cd /root/tempus/dist && find api aggregator -name '*.js' -type f | LC_ALL=C sort | xargs sha256sum | sha256sum)`,
-        matching the same command in a scratch build of `c22dd75d` (as in
-        0.1), never in `/root/tempus`. Relative paths let the two match.
-        `dist/api` is included because the writer and the backfill load it
-        (`anchor-links-backfill.mjs:27-31`).
+        matching the same command in a scratch build of `54afb5a1` (as in
+        0.1), never in `/root/tempus`. `dist/api` is included because the
+        writer and the backfill load it.
+      - Supporting only: the fleet digest on each node, from the read-only
+        digest command in `sync-all.sh`, run by hand.
 
       Empty output from any command means the gate is not met. If the
       `dist` hashes differ, record both, and the board rules on it.
@@ -483,6 +723,32 @@ All of these run on US. Repeat them per satellite only at Stage 3.
       The output must be non-empty, and must not be NFS or another network
       filesystem. Without `-T`, a path that isn't itself a mount point
       prints nothing.
+- [ ] 0.7 M39 drainer and PR 72, on US (new in round 5).
+      - Record the raw `redis-cli LLEN` and `LRANGE` of `rubric:tier2:retry`
+        and `rubric:tier2:retry:dead` on all five nodes. Read-only: use
+        `LLEN` and `LRANGE` only, never `LPOP`, `RPUSH`, `LREM` or `DEL`.
+      - Record `grep -c 'M39-RETRY] re-anchored'` over the aggregator pm2 log
+        since the deploy, with each `anchorId` and seq.
+      - Record `ZK_PAYLOAD_V2` as read from `ecosystem.config.cjs`, never
+        from `pm2 env`.
+      - Record the mirror query output for the 3 entries at seq
+        289552–289554, including whether they carry `zkAggregateRoot` and
+        `prevAnchorId`.
+      - Record the `b9e7aa1a` item ids and confirm its bundle has no
+        `seqNum`. Add it to the spec as "unanchored, parked".
+      - Before A, one of:
+        - (1) option (b) is merged and reviewed under 0.1. The bundle
+          persists `zkAggregateRoot` and the prev link, the drainer passes
+          them, and the drainer checks the mirror for the `anchorId` before
+          any republish.
+        - (2) a reviewed change stops the drainer from publishing while
+          `RUBRIC_ANCHOR_LINKS_ENABLED=true`, and queued retries stay
+          queued.
+
+        A signed acceptance alone does not meet 0.7.
+      - Every drainer anchor published so far goes in the spec's gap
+        register. PR 72 records a signed acceptance of option (a) for
+        operation with the flag off, naming findings 35 and 36.
 
 ### Stage 1: A on US
 
@@ -496,7 +762,7 @@ All of these run on US. Repeat them per satellite only at Stage 3.
       start-up log must show `anchor links (RUBRIC_ANCHOR_LINKS_ENABLED): ON;
       index /mnt/tempus-attestation-store/bundles/attestation-index.jsonl`.
       It must also show `anchor links: N attestation ids in the index` with
-      N ≥ 103758 (the `indexIds` of the `c22dd75d` stamped dry run; only #68
+      N ≥ 103951 (the `indexIds` of the 21:07:12Z stamped dry run; only #68
       and later code prints this line), and must show neither
       `anchor links will not be written` nor `unreadable`. If either
       appears, Stop at once.
@@ -523,6 +789,10 @@ All of these run on US. Repeat them per satellite only at Stage 3.
         the `reconcile-rt` swap (finding 7)
       - list by id every `linksSkippedNotInIndex` traced to the
         retry-drainer exception; 2.3 allows for exactly those ids
+      - any `[M39-RETRY] re-anchored` line during the soak means Stop and
+        go back to the board
+      - `rubric:tier2:retry:dead` holds only `b9e7aa1a` throughout the soak
+      - `linksSkippedExcluded` is 0 (no fixture id is resubmitted)
 
 ### Stage 2: B on US
 
@@ -530,26 +800,44 @@ All of these run on US. Repeat them per satellite only at Stage 3.
       `node scripts/anchor-links-backfill.mjs --store /mnt/tempus-attestation-store`.
       Save the JSON output. *Met for the pre-Stage-1 runs on 2026-10-09
       15:16 (`~/p6-dryrun.json`, unstamped) and 16:44:05Z
-      (`~/p6-dryrun-stamped.txt`, `c22dd75d`). Re-run after Stage 1.*
+      (`c22dd75d`), and 21:07:12Z (PR 70-era script). Both were saved as
+      `~/p6-dryrun-stamped.txt`, which now holds the 21:07:12Z run. Re-run
+      after Stage 1.*
 - [ ] 2.2 The #68 not-in-index filter stands in for an explicit list of
       planned link ids, once 0.1 and 0.3 are met. In addition, a read-only
       signer tally over every tier-1 flush the run resolves must show 100%
       US: the `issuer_node_region` from the signed envelope, or the stub's
-      `publicKey` checked against US key history. If any flush is not US,
-      B and C are NO-GO.
+      `publicKey` checked against US key history. `issuerNodeRegion` counts
+      only if the backfill checks each envelope's signature before it reads
+      the field (a reviewed code change), or else an independent read-only
+      `publicKey` check against US key history, captured raw. If any flush is
+      not US, B and C are NO-GO.
 - [ ] 2.3 Re-run the dry run no more than 1 h before apply, from
       `/root/tempus`, captured as one file with the commands in it:
       `{ hostname; date -u +%FT%TZ; git rev-parse HEAD; sha256sum scripts/anchor-links-backfill.mjs; (cd dist && find api aggregator -name '*.js' -type f | LC_ALL=C sort | xargs sha256sum | sha256sum); node scripts/anchor-links-backfill.mjs --store /mnt/tempus-attestation-store; echo "exit=$?"; } > ~/p6-preapply.txt 2>&1`
-      The script sha256 must be the full
-      `f64e1c3a12595ea29994f316237aaefe41efeee6f902ece112f7a579eaf45501`
-      (the file at `c22dd75d`). The `dist` hash must equal 0.3's. A 16-hex
+      The script sha256 must be the full value recorded at 0.3 for the file
+      at `54afb5a1` (round 5; the `c22dd75d` value
+      `f64e1c3a12595ea29994f316237aaefe41efeee6f902ece112f7a579eaf45501` is
+      retired). The `dist` hash must equal 0.3's. A 16-hex
       prefix, or a header typed by hand, does not count. Read the thresholds
       from the raw JSON, never from the exit code or a summary:
       - `badId`, `rootMismatch`, `malformedMessages`, `conflicts` and
         `linkErrors` are 0, and the exit code is 0.
       - `unresolvedIds`: 0, or every entry explained by flushId.
-      - **Anchor `00949ddc` root cause, recorded before apply.** It must
-        state:
+      - **Anchor `00949ddc` root cause (round 5, narrowed by finding 32),
+        recorded before apply.** It must state:
+        - that `acc07fd1-401c-4f19-9163-1a60a0dc2e00` is in
+          `00949ddc….json` `tier1Flushes`, read from the file;
+        - for each (id, flush), the raw `issuedAt` and `payloadHash` read
+          from the stub files, all earlier than 2026-10-09 10:36:44 UTC (the
+          #62 merge);
+        - that none of the 19 ids was ever given to a customer.
+
+        The #62 deploy record, the M42b deploy time and the key or
+        request-log items are withdrawn as B blockers: B writes no link for
+        any of the 19 ids. The round 4 text below is kept as history.
+
+        Round 4 text (superseded): it must state:
         - whether `acc07fd1-401c-4f19-9163-1a60a0dc2e00` is in
           `00949ddc….json` `tier1Flushes`. *Stated by the operator in round
         4: yes. Confirm from the file.*
@@ -595,8 +883,11 @@ All of these run on US. Repeat them per satellite only at Stage 3.
         - the one-internal-key condition: before #62, the request log entry
           for each submission;
         - the M42b deploy time on US.
-      - **Open design item: exclusion list for the fixture ids.** Add an
-        explicit exclusion list to `scripts/anchor-links-backfill.mjs` for
+      - **Exclusion (landed in rubric-protocol PR 70, round 5).** `excluded`
+        = 22, `excludedIds` = 19, and `excludedList` is exactly the 19 ids
+        of the 21:07:12Z run. They are not counted in `linksAppended`.
+        *Round 4 text (superseded):* **Open design item: exclusion list for
+        the fixture ids.** Add an explicit exclusion list to `scripts/anchor-links-backfill.mjs` for
         the 19 `m42-golden` ids. The backfill then writes none of the 19
         links (one per id) it would otherwise write through `acc07fd1`
         (finding 24).
@@ -607,7 +898,18 @@ All of these run on US. Repeat them per satellite only at Stage 3.
         and 0.3 hashes re-taken. If it lands, the 2.3 `linksAppended` bounds
         drop by 19, and the note below records the ids as unlinked fixtures
         instead of single-leaf links.
-      - **Note, before apply, when B proceeds.** Record in
+      - **Note, before apply, when B proceeds (round 5, replaces the round 4
+        note).** Record in `docs/specs/attestation-index-and-replay.md` and
+        in #56 that anchor `00949ddc-b802-407a-af7b-2d2e6042bf25` (seq
+        276440) commits each of the 19 `m42-golden` fixture ids to three
+        leaves with different payloads. The ids are excluded and B writes
+        no link for them. decision-verify reports them as unlinked test
+        fixtures. An erratum is required instead if any of the ids was ever
+        given to a customer.
+      - **Drainer anchors (round 5).** List every drainer anchor published
+        since the deploy in the gap register. In the topic scan, no
+        `anchorId` appears in two complete messages.
+      - *Round 4 note (superseded):* Record in
         `docs/specs/attestation-index-and-replay.md` and in #56 that anchor
         `00949ddc-b802-407a-af7b-2d2e6042bf25` (seq 276440) commits each of
         the 19 listed ids to three leaves with different payloads. Record
@@ -631,11 +933,12 @@ All of these run on US. Repeat them per satellite only at Stage 3.
         whether chunk 1 decodes to `{"type":"RUBRIC_TIER2_ANCHOR"`.
       - `notInIndexIds` ≤ 1121882 plus the ids listed under the 1.3
         retry-drainer exception. Any other rise means stop.
-      - `alreadyPresent` ≤ 3, unless explained. Confirm that the 3 are
-        repeats within this run in flush `acc07fd1` (22 items, 19 ids).
-      - `linksAppended`: at least 76368 minus any explained rise in
-        `unresolvedIds`, and at most 76368 + (new `indexIds` − 103758). Any
-        overrun must be traced by id.
+      - `alreadyPresent` = 0, unless each one is explained by id (round 5;
+        the round 4 3 were repeats in `acc07fd1`, now excluded).
+      - `linksAppended`: at least 76349 minus any explained rise in
+        `unresolvedIds`, and at most 76349 + (new `indexIds` − 103758)
+        (round 5: 76368 less the 19 excluded links). Any overrun must be
+        traced by id.
       - `bytesToAppend / linksAppended` between 340 and 380.
       - `noBundle` and `foreignChunks`: record them. They don't block B;
         noBundle is reconciled at 3.1.
@@ -682,16 +985,31 @@ All of these run on US. Repeat them per satellite only at Stage 3.
       `reconcile-rt.py`, so copy them, verify them by hash, and record that.
       Confirm `reconcile-rt.py` runs from neither cron nor a systemd timer.
 
-## What flips each NO-GO
+## What flips each NO-GO (round 5)
 
-- **A:** 0.1–0.6 (round 4 text) recorded in #56 as raw per-host output
-  against `c22dd75d`, and 0.2 shows every aggregator on a loopback-only
-  `redis-server` at `127.0.0.1:6379` on all five nodes.
-- **B:** Stage 1 passed; the anchor `00949ddc` root cause shows every
-  differing submission predates the #62 deploy on US and came from one
-  internal key, and the 2.3 note is recorded; the 2.2 signer tally is 100%
-  US; the 2.3 pre-apply run passes against `c22dd75d`.
+- **A:** 0.1–0.7 (round 5 text) recorded in #56 as raw command output
+  against `54afb5a1`, with 0.2 passing on all five nodes.
+- **B:** Stage 1 passed; 2.2 met as written; 2.3 (round 5 text) passed, with
+  the note recorded.
 - **C:** 3.1.
+
+## Final-round disposition
+
+Round 5 is the last round. The NO-GOs stand until their conditions are
+recorded, and the decision returns to the operator. No round 6 is
+scheduled. Once the conditions are recorded, the board sits once to verify,
+and scores each item MET or NOT MET only. It adds no conditions. Any of
+these returns the decision to the board as a new decision:
+- a 0.2 failure on any node;
+- a `dist` hash or script hash mismatch;
+- any 2.3 stop condition;
+- any drainer publish while the flag is on;
+- a fixture id found given to a customer;
+- any merge after `54afb5a1` that touches `src/aggregator`,
+  `src/api/anchor-link*` or `scripts/anchor-links-backfill.mjs`.
+
+Stage 0 evidence must be taken again if it is older than 72 h at the time
+of A, or if it was taken before any later deploy.
 
 ## Scope consequences while the satellites are off
 
