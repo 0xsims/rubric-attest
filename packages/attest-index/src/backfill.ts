@@ -56,37 +56,43 @@ function isBundle(value: unknown): value is AttestationBundle {
   );
 }
 
+/** Index rows for every valid DAR bundle under `storeDir`, and the walk's counts. */
+export function collectRows(storeDir: string): { files: number; rows: IndexRow[]; skipped: number } {
+  const files = walkJson(storeDir);
+  const rows: IndexRow[] = [];
+  let skipped = 0;
+  for (const file of files) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(readFileSync(file, "utf8"));
+    } catch {
+      skipped++;
+      continue;
+    }
+    if (!isBundle(parsed)) {
+      skipped++;
+      continue;
+    }
+    // Reject a ts that has no valid day key here, so grouping can't throw.
+    try {
+      shardKeyForTs(parsed.dar.ts);
+    } catch {
+      skipped++;
+      continue;
+    }
+    rows.push(rowFromBundle(parsed, relative(storeDir, file)));
+  }
+  return { files: files.length, rows, skipped };
+}
+
 /** Backfill (or rebuild) the index at `indexDir` from bundles under `storeDir`. */
 export function backfill(storeDir: string, indexDir: string): BackfillResult {
   const index = new Index(indexDir);
   try {
-    const files = walkJson(storeDir);
-    const rows: IndexRow[] = [];
-    let skipped = 0;
-    for (const file of files) {
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(readFileSync(file, "utf8"));
-      } catch {
-        skipped++;
-        continue;
-      }
-      if (!isBundle(parsed)) {
-        skipped++;
-        continue;
-      }
-      // Reject a ts that has no valid day key here, so grouping can't throw.
-      try {
-        shardKeyForTs(parsed.dar.ts);
-      } catch {
-        skipped++;
-        continue;
-      }
-      rows.push(rowFromBundle(parsed, relative(storeDir, file)));
-    }
+    const { files, rows, skipped } = collectRows(storeDir);
     const { written, failed } = index.writeBatchResilient(rows);
     return {
-      bundleFiles: files.length,
+      bundleFiles: files,
       rowsWritten: written,
       failed,
       skipped,

@@ -18,6 +18,30 @@ export interface IndexRow {
   bundlePath: string;
 }
 
+/**
+ * Anchor columns (schema v2, docs/specs/attestation-index-and-replay.md §3.5).
+ * Derived on every ingest from the anchor-link lines in attestation-index.jsonl
+ * for the row's attestationId (the tiered id a DAR is bridged into); all null
+ * until that id has a link. Never written by `backfill`.
+ */
+export interface AnchorColumns {
+  anchorId: string | null;
+  aggregateRoot: string | null;
+  /** Ascending decimal strings, one per (anchorId, hcsSequence) group. */
+  hcsSequences: string[] | null;
+  /** Consensus timestamp of the lowest sequence, or null. */
+  hcsConsensusTs: string | null;
+  /** 1: the link set has a conflict and the other columns are not trusted. */
+  anchorConflict: 0 | 1 | null;
+}
+
+/** An IndexRow plus its anchor columns. */
+export interface AnchoredRow extends IndexRow, AnchorColumns {}
+
+export const NO_ANCHORS: AnchorColumns = Object.freeze({
+  anchorId: null, aggregateRoot: null, hcsSequences: null, hcsConsensusTs: null, anchorConflict: null,
+}) as AnchorColumns;
+
 /** A stored attestation bundle: the DAR core plus its service `attestationId`. */
 export interface AttestationBundle {
   attestationId: string;
@@ -85,3 +109,20 @@ CREATE INDEX        IF NOT EXISTS ix_agent_schema     ON attestations(agentId, s
 CREATE INDEX        IF NOT EXISTS ix_agent_decisionId ON attestations(agentId, decisionId);
 CREATE INDEX        IF NOT EXISTS ix_agent_prev       ON attestations(agentId, prev);
 `;
+
+/** `PRAGMA user_version` this package writes. A writer refuses a shard above it. */
+export const SCHEMA_VERSION = 2;
+
+/** The v1 columns, selected explicitly so IndexRow results keep their v1 shape. */
+export const V1_COLUMNS = [
+  "attestationId", "decisionId", "agentId", "schemaHash", "decisionHash", "prev", "ts", "leafType", "bundlePath",
+] as const;
+
+/** v1 -> v2 is additive: these columns are ADDed, all nullable. No table rebuild, no new table. */
+export const V2_COLUMNS: ReadonlyArray<readonly [string, string]> = [
+  ["anchorId", "TEXT"],
+  ["aggregateRoot", "TEXT"],
+  ["hcsSequences", "TEXT"], // JSON array of decimal strings
+  ["hcsConsensusTs", "TEXT"],
+  ["anchorConflict", "INTEGER"],
+];
