@@ -571,6 +571,42 @@ All of these run on US. Repeat them per satellite only at Stage 3.
         submission is later than the #62 deploy, it skipped the claim
         (finding 9's class): B is NO-GO and the ruling goes back to the
         board.
+
+        *Recorded after round 4.* Board-verified from `git log`: the #62
+        merge. Operator-stated: the deploy and submission times.
+        - rubric-protocol #62 (id claiming) is `8c7c66d2`, merged
+          2026-10-09T06:36:44-04:00 (10:36:44 UTC). It is an ancestor of
+          `c22dd75d`.
+        - #62 was deployed fleet-wide 2026-10-09 10:48 UTC (operator-stated;
+          the deploy or pm2 record is not yet supplied).
+        - The `m42-golden` submissions are 2026-07-14 21:37 UTC
+          (operator-stated, from the cold stub files). That is about three
+          months before #62 existed.
+
+        On the operator-stated submission time, the timing condition is
+        met: every submission of the 19 ids predates #62. If that time is
+        confirmed, cause (b) in finding 25 (a later path that skips the
+        claim) is ruled out for these ids. Whether this is the closed
+        historical defect of cause (a) depends on the key condition below.
+        Still open before apply:
+        - per (id, flush) `issuedAt`, `payloadHash` and content digest, read
+          from the stub files;
+        - the #62 deploy or pm2 record for US;
+        - the one-internal-key condition: before #62, the request log entry
+          for each submission;
+        - the M42b deploy time on US.
+      - **Open design item: exclusion list for the fixture ids.** Add an
+        explicit exclusion list to `scripts/anchor-links-backfill.mjs` for
+        the 19 `m42-golden` ids. The backfill then writes none of the 19
+        links (one per id) it would otherwise write through `acc07fd1`
+        (finding 24).
+        The list is the 19 ids in `~/p6-dryrun-stamped.txt`
+        `details.notThisFlush`. Excluded ids are reported by count and id in
+        the JSON output, and are not counted as `linksAppended`. This needs
+        a code change in rubric-protocol, with its own review and the 0.1
+        and 0.3 hashes re-taken. If it lands, the 2.3 `linksAppended` bounds
+        drop by 19, and the note below records the ids as unlinked fixtures
+        instead of single-leaf links.
       - **Note, before apply, when B proceeds.** Record in
         `docs/specs/attestation-index-and-replay.md` and in #56 that anchor
         `00949ddc-b802-407a-af7b-2d2e6042bf25` (seq 276440) commits each of
