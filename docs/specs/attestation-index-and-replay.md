@@ -1,6 +1,8 @@
 # Attestation index, replay verifier, and anchor drift check
 
-Status: **draft** (design only, no code). Covers phases P6, P7 and P8; task
+Status: **draft**. P6 is built (rubric-protocol anchor links and mirror
+backfill behind a default-off flag; attest-index 1.3.0 ingest); the
+decision-verify step, P7 and P8 are design only. Covers phases P6, P7 and P8; task
 files are `tasks/P6-index.md`, `tasks/P7-replay.md`, `tasks/P7a-anchor-payers.md`,
 `tasks/P8-drift-check.md`.
 
@@ -96,7 +98,21 @@ Built in `AttestationPublisher.publishTier2Anchor`
   held in memory, so it resets on restart (`tiered-aggregator.ts:563`). The
   retry drainer drops both `prev*` fields (`aggregator/index.ts:370-383`).
 * Messages of 1024 bytes or more are chunked (`setMaxChunks(20)`), and chunks
-  can arrive out of order.
+  can arrive out of order. `TopicMessageSubmitTransaction.execute()` returns
+  `executeAll()[0]`, so the receipt's `topicSequenceNumber` (what the anchor
+  job records) is **chunk 1's** sequence number (`@hashgraph/sdk`
+  `lib/topic/TopicMessageSubmitTransaction.js`).
+* **The `alg` block on the mirror is not always the one above** (checked
+  2026-10-09 against the public mirror, P6 step 1). Messages up to about
+  2026-08-11T11:00Z (for example sequences 286821–286823) carry
+  `schemaVersion: "rubric-anchor/2"`, `treeVersion: 3` and a flat block
+  `{leaf, node, aggregate, zk, canonicalization, domainSeparation: "RFC6962",
+  merkleOdd: "duplicate"}` with no `levels`. Later messages (from sequence
+  286834) carry `levels`, but each level also has descriptive keys (`leaf`,
+  `node`, `leafPre`, `rule`) beyond `{hash, domainSeparation, merkleOdd}`.
+  §4.3 step 5 asks for `alg.levels` deep-equal to the block above, which
+  neither shape is. P7 step 1 must settle this (§6 O8). P6 does not read
+  `alg`.
 
 ### 2.5 Merkle code in rubric-protocol (the reference implementation for P7)
 
@@ -238,9 +254,16 @@ Rules:
   anchorId)` can therefore have several `hcsSequence` groups, and they can
   appear in any order (for example S2 from the retry, then S1 from the
   backfill). **The attestation's anchor is the set of all its groups.** No
-  group is preferred, and a new group is never a conflict. Where one value
-  is needed for display, use the lowest sequence, computed fresh from the
-  whole set every time.
+  group is preferred, and a new group is never a conflict on its own. But
+  the groups of one `(id, anchorId)` must agree on `aggregateRoot` and
+  `topic`: retries re-publish the same anchor, so groups that disagree are a
+  **conflict** (as `DUPLICATE_ANCHOR_CONFLICT` is on the mirror, §4.3).
+  Where one value is needed for display, use the lowest sequence, computed
+  fresh from the whole set every time.
+* **Malformed link lines fail closed.** A `kind: "anchor-link"` line whose
+  `anchorId` or `hcsSequence` is missing or malformed, but whose `id` is a
+  string, is a conflict for that `id`, so a row is never read as cleanly
+  anchored, or as unanchored, from a link set it could not fully read.
 * **One anchor per attestation.** Links from one `id` to two different
   `anchorId`s are a conflict.
 * **`hcsConsensusTs` is only a consensus timestamp**, from the mirror or
@@ -274,6 +297,8 @@ written**):
   `reputation-route.ts:486` `readFileSync` the whole file per request. P6
   step 1 measures their latency on a synthetic file 3× the production line
   count and size (no production data copied), and records it in the PR. P6 does not change those readers beyond the filter.
+  (Separately from P6, rubric-protocol #58 later moved every reader onto the
+  shared non-blocking `index-reader.ts`; see §3.6.)
 
 ### 3.3 Write at anchor time
 
@@ -300,6 +325,19 @@ attestation ids (`Tier2Anchor` has none, `tiered-aggregator.ts:71-82`).
   records (§3.4).
 * No new write hook anywhere else, and no new file. Tier-1, direct and
   threshold lines keep their current writers and shapes.
+* *As built:* the env flag is `RUBRIC_ANCHOR_LINKS_ENABLED`, on only when it
+  is exactly `true`; the aggregator logs its state at start-up and the stats
+  endpoint reports it with the counters (`linksAppended`,
+  `linksSkippedNoStub`, `linksSkippedForeign`, `linkErrors`). A stub id
+  whose warm record is another flush's, or whose stub names another flush or
+  batch root, gets no link. `INDEX_PATH` has a test-only override,
+  `RUBRIC_INDEX_WRITER_PATH_FOR_TESTS`, that is ignored when
+  `NODE_ENV=production`; the aggregator logs the resolved path at start-up. `backfillWarmAnchors` moved to
+  `src/aggregator/warm-backfill.ts` unchanged, so the compiled build can be
+  tested (importing `aggregator/index.ts` starts the process). Links are
+  written after the warm pointers. A receipt with no sequence (`"unknown"`)
+  writes no link and counts an error. `appendAnchorLinks` does not check the
+  flag, so the backfill script can use it.
 
 ### 3.4 Historical backfill from the mirror
 
@@ -342,6 +380,42 @@ Without `--apply`, it writes nothing and prints the same counts. It contacts
 only the mirror host. It runs while the writers run, so it follows the same
 append rules as §3.3.
 
+As built (P6):
+
+* A chunked message is linked under chunk 1's `sequence_number` and
+  `consensus_timestamp`, matching the anchor job's receipt (§2.4). The
+  message is only complete once its last chunk reaches consensus, so chunk
+  1's time can be earlier than the full commitment; P7 and P8 must use the
+  same chunk-1 rule. Today's anchors fit one chunk.
+* **Binding before linking.** Beyond the root check: the message's
+  `tier1Count` and `totalItems` must match the bundle's flush list and its
+  `itemCount` sum (else `rootMismatch`). Each id is linked only if its stub
+  names this flush (`tier1FlushId`) and its batch root (`batchRoot`, legacy
+  `forestRoot`) equals the flush's `forestRoot`, and, when its warm record
+  exists, that record is this flush's (`belongsToFlush`) and any
+  `anchors.hcs.anchor_id` it carries is this anchor. In the warm-record
+  fallback the record's signed `tier1.envelope` must name the flush and its
+  `batch_root` must equal `forestRoot`. Ids that fail are counted in
+  `notThisFlush` and never linked. The anchor job applies the same stub and
+  warm-record rule (`linksSkippedForeign`). Verifying signatures and leaf
+  proofs is left to P7.
+* `retention.py` moves every file in `bundles/` (tier-2 bundles and
+  `stubs-*.json` included) to `warm/` after 2 h, to `cold/` after 7 days,
+  and archives it to S3 and removes it after 90 days. So `<anchorId>.json`
+  and `stubs-<flushId>.json` are looked up in hot, warm and cold, in that
+  order. The warm-record fallback scans `warm/` and `cold/` for tiered
+  records whose `stub.tier1FlushId` (or `stub.flushId`) names the flush and
+  whose file name is `<stub.attestationId>.json`. Anchors past 90 days are
+  `noBundle` or `unresolvedIds` until an S3 path is added.
+* `unresolvedIds` for a flush is its `itemCount` minus the ids resolved.
+* A link that would conflict (the id already links to another `anchorId`,
+  or the group holds a different non-null value) is counted in `conflicts`
+  and **not appended**; `conflicts` also counts conflicts already in the
+  file. The output lists each one.
+* A mirror failure stops the run before anything is written (exit 3).
+* `--apply` refuses a `--store` whose jsonl is not `INDEX_PATH`, because
+  `appendAnchorLinks` writes only `INDEX_PATH`.
+
 ### 3.5 attest-index ingests the jsonl
 
 attest-index stays the day-shard SQLite cache that decision-verify queries
@@ -371,17 +445,39 @@ anchor data. Its anchor columns come only from the jsonl.
     `hcsSequences`, and does not conflict. A §3.2 conflict (two `anchorId`s,
     or a field conflict) sets `anchorConflict = 1` and is reported. In that
     case the columns hold the first-written values and are not trusted.
-    The resume cursor therefore covers only reading new lines. A row whose
-    link set gained a line is recomputed in full.
+    A row whose link set gained a line is recomputed in full.
   * It writes a resume cursor `{line, id}` after each run. If the line at
     the cursor no longer has that `id`, it re-ingests from the start, which
     is idempotent. Line numbers are stable across `reconcile-rt.py`, which
     keeps line count and order.
+  * *As built:* every run reads the whole jsonl (one open, to EOF) and
+    recomputes the anchor columns of every DAR row from the full link set,
+    writing a row only when its columns change. So correctness never depends
+    on the cursor; it records progress (`newLines`) and detects a replaced
+    file (`fullReingest`). The cursor `id` is that of the last complete line.
+    Groups of one `(id, anchorId)` that disagree on `aggregateRoot` or `topic`
+    across sequences also set `anchorConflict = 1`. DAR rows are built from
+    the bundles by the same walk as `rubric-index-backfill`.
   * It never writes the jsonl.
-* **The DAR ↔ tiered id.** P6 step 1 confirms whether a DAR bundle and the
-  tiered stub it was bridged into share an `attestationId`
-  (`dar-emit.ts:960-976`). If they do not, add a nullable `bridgedTo` column
-  holding the tiered id, and join anchor links on it. Record the answer here.
+* **The DAR ↔ tiered id.** *Answered in P6 step 1: they share it, so there is
+  no `bridgedTo` column and anchor links join on the row's `attestationId`.*
+  `TieredDarTransport.store()` writes the pending bundle with
+  `attestationId` set to the tiered id it POSTed (`dar-emit.ts:493-498`).
+  `Enricher.enrichOne` refuses a bundle whose `attestationId` differs from
+  `extensions.rubricDar.tiered.attestationId` (`:885`) and writes the
+  completed bundle with `attestationId: tiered.attestationId` (`:958`).
+* **Reattest is the exception, and the row does not follow it by itself.**
+  An operator reattest (decision-review DARs only, `dar-emit.ts:1004`)
+  rewrites the bundle's `attestationId` to a new tiered id with the same
+  `decisionId` (`:1014`). Ingest and backfill upsert on `attestationId`, so
+  the new row breaks the unique `decisionId` index, is counted in `failed`,
+  and the old row stays, keyed on the old tiered id, with that id's anchor
+  links. The operator must delete the old row first, as the reattest log
+  line already says (`:1020-1021`, DEPLOY.md "stalled bundles"). **Before
+  the decision-verify 503 ships**, either ingest replaces a row in place when
+  the existing row for that `decisionId` has the same `bundlePath`, or the
+  route treats a `failed` reattested row as unknown. Otherwise a reattested
+  DAR whose old POST lands later gets a permanent false 503.
 * **decision-verify reads the same data.** `decision-verify-route.ts` reads
   the row's anchor columns through a new `byDecisionIdAnchored` query, in
   the lookup block that runs before `gate()` (`:120-147`). Then:
@@ -405,6 +501,23 @@ anchor data. Its anchor columns come only from the jsonl.
   * The success response shape does not change.
 * The existing `rubric-index-backfill` bin keeps working. It never writes
   the anchor columns.
+* *As built:* the existing queries select the v1 columns explicitly, so their
+  rows keep exactly the v1 keys on a v2 shard. A rubric-protocol still on
+  attest-index 1.0.x uses `SELECT *` and sees the extra columns once ingest
+  has run; its `chainCheck` output carries only ids and counts, so no
+  response changes.
+
+### 3.6 P6 step 1 answers (2026-10-09)
+
+| Question | Answer |
+|---|---|
+| DAR ↔ tiered id | Shared `attestationId`; no `bridgedTo` (§3.5). |
+| Filesystem of `/mnt/tempus-attestation-store`; `O_APPEND` ≤ 64 KiB interleave | **Open: needs a human on the host** (`findmnt -no FSTYPE /mnt/tempus-attestation-store`). Not in the repo. On a local filesystem, two processes appending 10k attestation lines and ≥10k link lines each produced no torn or interleaved line (rubric-protocol `tests/anchor-links/concurrent.test.mjs`). If the mount is NFS or another network filesystem, stop. |
+| Readers and writers of the jsonl | In rubric-protocol, matches §3.1. Every reader in `src/api/` reads through `index-reader.ts` (rubric-protocol #58) or calls `isAttestationLine` (`server.ts:224`); `tests/index-readers/readers.test.mjs` fails the build for any new file that names the jsonl without one of them. Writers: `index-writer.ts` (`appendIndexEntry`, now `appendAnchorLinks`), `server.ts` `saveQueryIndex`, `reconcile-rt.py` (rewrite, passes link lines through). `retention.py` never touches it. `attest-worker.ts` writes a different file. Cron (`ops/crontab-us.txt`) runs `retention.py` and `reconcile-rt.py` from `/root/tempus`. **Not verifiable from the repo:** `/root/rubric-backup-v2.sh`, `/root/rubric-stats.py`, `/root/rubric-tracker/*`, `/root/rubric-assert/run.sh`, `/root/tempus/reconcile-anchors.mjs`, `/root/health-monitor.sh`. A human checks each for reads of the jsonl that do not skip `kind` lines. |
+| Warm-record pointer to its flush | `stub.tier1FlushId` (`tier1-worker.ts:135`), with `stub.flushId` as the older fallback (`warm-anchor-guard.ts`). The record's own `anchors.hcs` holds `sequence_number` and `anchor_id`, not the flush. |
+| Non-UUID `anchorId` on the mirror | **0** of 35,813 `RUBRIC_TIER2_ANCHOR` messages (35,800 distinct `anchorId`s, 13 retried once). Scanned all 309,001 messages (sequences 1–309,001) on `mainnet-public` on 2026-10-09. No chunk came from a payer other than `0.0.3923341`; 23 chunked messages are incomplete on the mirror (10-chunk messages, type unknown); 27,292 messages have no `type`; those sampled (sequences 10140–10164) are direct attestations (`attestation_type: "direct"`), an inference for the rest. `prevAnchorId`: 0 non-UUID. `flushId`s are not on-chain; counting them needs the store (the backfill dry run reports `badId`). |
+| Lines with a `kind` key in production | **Open: a human runs the read-only count; it must be 0.** |
+| Latency of the three whole-file readers at 3× size | Measured and recorded in rubric-protocol #55; those readers moved to the non-blocking `index-reader.ts` in #58. |
 
 ---
 
@@ -652,7 +765,7 @@ Each value must match `^0\.0\.[0-9]+$`, or the run exits 2.
 | `MISSING_FROM_MIRROR` | an `anchorId` summary with `anchorTime` in the window, where neither the window's mirror messages nor the by-sequence lookup (§5.2 step 4) yields a genuine message matching it on `anchorId` and `aggregateRoot` | **yes** |
 | `ROOT_MISMATCH` | same `anchorId`, different `aggregateRoot` (anchor-link vs mirror) | **yes** |
 | `SEQ_MISMATCH` | for an `anchorId` in the window, an anchor-link group's `hcsSequence` is not, after the by-sequence lookup, the sequence of a genuine mirror message with that `anchorId` and `aggregateRoot`, or its merged non-null `hcsConsensusTs` differs from that message's. Checked per group. A genuine mirror sequence with no group is not `SEQ_MISMATCH`; the backfill adds it, and until then it is `INDEX_PENDING`. | **yes** |
-| `LINK_CONFLICT` | the §3.2 merge rule finds a conflict: one `id` linked to two `anchorId`s, or two different non-null values for one field in one group | **yes** |
+| `LINK_CONFLICT` | the §3.2 merge rule finds a conflict: one `id` linked to two `anchorId`s, two different non-null values for one field in one group, groups of one `(id, anchorId)` that disagree on `aggregateRoot` or `topic`, or a malformed link line | **yes** |
 | `DUPLICATE_ANCHOR` | several mirror messages share an `anchorId`, all with the same `aggregateRoot` (retry) | no, a warning |
 | `DUPLICATE_ANCHOR_CONFLICT` | several mirror messages share an `anchorId` with different `aggregateRoot`s | **yes** |
 | `FOREIGN_PAYER` | any message or chunk on the topic, of any type, whose `payer_account_id` is not in the pinned anchor-payer list (D4) or, when `chunk_info` is present, differs from the account in its `initial_transaction_id`. One finding per chunk. Excluded from all chain and index checks; it never removes a genuine message. | **yes** |
@@ -691,6 +804,7 @@ O1 and O2 go to the board subagent, since they change published formats.
 | O5 | Should the retry drainer keep `prevFederationSigHash`/`prevAnchorId` (`aggregator/index.ts:370-383`)? Today a retry creates a `SEGMENT_START`. | nothing; reduces P8 noise |
 | O6 | **Closed, see D4.** The topic has `submit_key: null` and `admin_key: null` (immutable, no key ever). Origin is a pinned payer list, currently `0.0.3923341`, published as `anchorPayers` in the keys file, with a hardcoded fallback in the verifier. Board review of the published field is part of `tasks/P7a-anchor-payers.md`. | — |
 | O7 | `reconcile-rt.py` rewrites the `rt` field of earlier jsonl lines and `os.replace`s the file (§3.1). So attestation lines are not append-only, which D5 records; only anchor-link lines are. Also, a line appended between its tail read and its replace is lost, because the writers don't take its lock. Should `rt` move out of the jsonl (for example, a sidecar keyed by `id`), or should the writers share its lock? P6 only makes it pass link lines through untouched. A lost link line is re-appended by the §3.4 backfill on its next run, and P8 reports `MISSING_FROM_INDEX` until then. | nothing in P6 as written; closes the lost-append window |
+| O8 | The mirror's `alg` blocks are not the §2.4 block (§2.4, last bullet): older `rubric-anchor/2` messages have a flat block with `merkleOdd: "duplicate"`, and current ones add descriptive keys to each level. What does P7 accept: the three level specs compared on `{hash, domainSeparation, merkleOdd}` only, and the flat block as a separate, implemented construction or `UNSUPPORTED`? | §4.3 step 5 format check |
 
 ---
 

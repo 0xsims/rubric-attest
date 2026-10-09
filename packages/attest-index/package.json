@@ -1,6 +1,6 @@
 {
   "name": "@rubric-protocol/attest-index",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "type": "module",
   "description": "Rubric attestation index: SQLite day-shard writer, backfill, query lib",
   "license": "Apache-2.0",
@@ -19,7 +19,8 @@
     }
   },
   "bin": {
-    "rubric-index-backfill": "./dist/cli/backfill.js"
+    "rubric-index-backfill": "./dist/cli/backfill.js",
+    "rubric-index-ingest": "./dist/cli/ingest.js"
   },
   "files": ["dist", "src"],
   "publishConfig": { "access": "public" },

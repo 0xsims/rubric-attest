@@ -10,6 +10,7 @@ import {
   dayKeyFromFileName,
   shardFileName,
   shardKeyForTs,
+  type AnchoredRow,
   type IndexRow,
 } from "./schema.js";
 
@@ -112,6 +113,15 @@ export class Index {
   byDecisionId(decisionId: string): IndexRow | undefined {
     for (const shard of this.openShards()) {
       const row = shard.byDecisionId(decisionId);
+      if (row) return row;
+    }
+    return undefined;
+  }
+
+  /** byDecisionId plus the anchor columns (schema v2); all null on a v1 shard or before any link. */
+  byDecisionIdAnchored(decisionId: string): AnchoredRow | undefined {
+    for (const shard of this.openShards()) {
+      const row = shard.byDecisionIdAnchored(decisionId);
       if (row) return row;
     }
     return undefined;

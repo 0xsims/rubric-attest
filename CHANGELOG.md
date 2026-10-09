@@ -10,6 +10,20 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **`@rubric-protocol/attest-index` 1.3.0: anchor columns and `rubric-index-ingest`**
+  (P6, `docs/specs/attestation-index-and-replay.md` §3.5). Schema v2 adds nullable
+  `anchorId`, `aggregateRoot`, `hcsSequences`, `hcsConsensusTs` and `anchorConflict`
+  columns with `ALTER TABLE … ADD COLUMN` when a writer opens a shard
+  (`PRAGMA user_version = 2`); a writer refuses a newer shard, and a read-only v1
+  shard stays queryable. `rubric-index-ingest <attestation-index.jsonl>
+  <bundle-store> <index-dir>` fills them from the jsonl's anchor-link lines, joined on
+  the DAR row's `attestationId`, and recomputes them on every run. New
+  `Index.byDecisionIdAnchored` / `Shard.byDecisionIdAnchored` and the `AnchoredRow`
+  type. `IndexRow` and the four existing queries are unchanged; they now select the
+  v1 columns explicitly, so their rows keep the v1 shape on a v2 shard.
+
 ## [1.2.0] - 2026-09-25
 
 Namespace-aware batch ingest. Batch ingest (`POST /v1/tiered-attest` with
