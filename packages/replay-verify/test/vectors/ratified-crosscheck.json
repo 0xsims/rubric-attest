@@ -1,0 +1,101 @@
+{
+  "source": "rubric-protocol 54afb5a1 test/vectors/tiered-golden-vectors-v0_1.json (ratified 2026-06-11)",
+  "note": "The generator rebuilt these with the compiled spec-merkle.ts and asserted equality before writing any file. The verifier test re-checks them with its own code.",
+  "oneLeaf": {
+    "canonical": "{\"attestation_id\":\"v1-single\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-06-11T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"acme-fraud-v3\",\"model_version\":\"3.2.1\"},\"payload\":{\"decision\":\"approve\"},\"rubric_version\":\"1.0\"}",
+    "leafHash": "f35840c2fdc9deb75f6be558e6161677b58cd4389508e013551c2149867f884c",
+    "root": "f35840c2fdc9deb75f6be558e6161677b58cd4389508e013551c2149867f884c"
+  },
+  "threeLeaves": {
+    "canonicals": [
+      "{\"attestation_id\":\"v2-a\",\"attestation_type\":\"tiered\",\"compliance_ref\":{\"jurisdiction\":[\"EU\",\"US\"],\"population_group\":\"protected-A\",\"risk_level\":\"high\"},\"issued_at\":\"2026-06-11T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"modelA\",\"model_version\":\"1.0\"},\"payload\":{\"decision\":\"deny\"},\"rubric_version\":\"1.0\"}",
+      "{\"attestation_id\":\"v2-b\",\"attestation_type\":\"tiered\",\"compliance_ref\":{\"jurisdiction\":[\"US\"],\"risk_level\":\"limited\"},\"issued_at\":\"2026-06-11T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"modelB\",\"model_version\":\"2.5\"},\"payload\":{\"decision\":\"approve\"},\"rubric_version\":\"1.0\"}",
+      "{\"attestation_id\":\"v2-c\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-06-11T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"modelA\",\"model_version\":\"1.0\"},\"payload\":{\"decision\":\"review\"},\"rubric_version\":\"1.0\"}"
+    ],
+    "leafHashes": [
+      "25bb3f490f282a9aa3068180e34f163d5c16a3d233194d6aea7765c2ecc4098c",
+      "d6d4da3beec95833eac79f69108717fc59e45c9798066a17084195b583c1daed",
+      "eaab577fd8a071f4f652d5a6f2646d9ec7f104bef5f107331577bd2f66fa7545"
+    ],
+    "proofs": [
+      [
+        {
+          "hash": "d6d4da3beec95833eac79f69108717fc59e45c9798066a17084195b583c1daed",
+          "dir": "R"
+        },
+        {
+          "hash": "eaab577fd8a071f4f652d5a6f2646d9ec7f104bef5f107331577bd2f66fa7545",
+          "dir": "R"
+        }
+      ],
+      [
+        {
+          "hash": "25bb3f490f282a9aa3068180e34f163d5c16a3d233194d6aea7765c2ecc4098c",
+          "dir": "L"
+        },
+        {
+          "hash": "eaab577fd8a071f4f652d5a6f2646d9ec7f104bef5f107331577bd2f66fa7545",
+          "dir": "R"
+        }
+      ],
+      [
+        {
+          "hash": "46a2a0d505f3dd5953dd8cd3d04ac38ceb977f066f030a7cf441117e4449ac85",
+          "dir": "L"
+        }
+      ]
+    ],
+    "root": "d96fb9fb609d245ed225c16e69cd1251d1085ff1cc2b455c3439e7427cf577ad"
+  },
+  "fourLeaves": {
+    "leafHashes": [
+      "f493848bbae0748f6a6e82dbf2420e8bd51ab5da5fff2f4109a0a6d9ddfeb9b6",
+      "9b21f830a491d5ded35b7e3c353d611fcbc7824e62823de8b6c5c2cd2b675c33",
+      "88afb8ca9f4b7d335ef21a8803b934e8c1fdfdccb9fb0599083bee36fca5254a",
+      "52ea6a7aa0d2c038f4437fb4e58214ee3fc740ac887a06e5173d532cebf0771f"
+    ],
+    "proofs": [
+      [
+        {
+          "hash": "9b21f830a491d5ded35b7e3c353d611fcbc7824e62823de8b6c5c2cd2b675c33",
+          "dir": "R"
+        },
+        {
+          "hash": "83bf953dc51ceac28632a9eff5f8341e38261f2620abe83ce20134f021887508",
+          "dir": "R"
+        }
+      ],
+      [
+        {
+          "hash": "f493848bbae0748f6a6e82dbf2420e8bd51ab5da5fff2f4109a0a6d9ddfeb9b6",
+          "dir": "L"
+        },
+        {
+          "hash": "83bf953dc51ceac28632a9eff5f8341e38261f2620abe83ce20134f021887508",
+          "dir": "R"
+        }
+      ],
+      [
+        {
+          "hash": "52ea6a7aa0d2c038f4437fb4e58214ee3fc740ac887a06e5173d532cebf0771f",
+          "dir": "R"
+        },
+        {
+          "hash": "0ee9e9d9312eb7bc6ae644d3dc13c707131a84b74cc2e0e241f6993d371448d2",
+          "dir": "L"
+        }
+      ],
+      [
+        {
+          "hash": "88afb8ca9f4b7d335ef21a8803b934e8c1fdfdccb9fb0599083bee36fca5254a",
+          "dir": "L"
+        },
+        {
+          "hash": "0ee9e9d9312eb7bc6ae644d3dc13c707131a84b74cc2e0e241f6993d371448d2",
+          "dir": "L"
+        }
+      ]
+    ],
+    "root": "e31062affb7fe8ea0efe18e9c174b23896a43ea4e1097fee9bd5677098ba5e90"
+  }
+}

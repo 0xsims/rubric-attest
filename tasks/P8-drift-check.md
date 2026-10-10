@@ -34,7 +34,7 @@ Read CLAUDE.md. The spec is `docs/specs/attestation-index-and-replay.md` (§2.4,
 - [ ] A genuine chunked anchor plus a forged chunk that claims its `initial_transaction_id` gives exactly one `FOREIGN_PAYER` finding. The genuine anchor still links in the chain and matches the index, with no `MISSING_FROM_MIRROR` or `CHAIN_GAP`.
 - [ ] A `FOREIGN_PAYER` message never satisfies a chain link, an index match, a `MISSING_FROM_MIRROR` check, or a duplicate check. A forged message with a genuine `anchorId` and a different `aggregateRoot` gives `FOREIGN_PAYER`, not `DUPLICATE_ANCHOR_CONFLICT` or `ROOT_MISMATCH`.
 - [ ] Any break in the `prevAnchorId` chain is `CHAIN_GAP`, including a `prevAnchorId` that only matches a `FOREIGN_PAYER` message.
-- [ ] Pinned payers: with no `--anchor-payer` the list is `["0.0.3923341"]`, and a test asserts it equals the P7 verifier's fallback. `--anchor-payer <acct>` (repeatable) replaces the default, and a value not matching `^0\.0\.[0-9]+$` exits 2. The keys file is not fetched.
+- [ ] Pinned payers: with no `--anchor-payer` the list is `["0.0.3923341"]`, and a test asserts it equals the P7 verifier's built-in list. `--anchor-payer <acct>` (repeatable) replaces the default, and a value that does not fully match `0\.0\.(0|[1-9][0-9]*)` exits 2 (test `"0.0.3923341\n"` and `"0.0.03923341"`). The keys file is not fetched.
 - [ ] A healthy fixture exits 0. It includes segment starts from a restart, a missed quorum, and a retry-drainer anchor with no `prev*` fields.
 - [ ] Drift exits 1 and the JSON lists every finding with `anchorId`, `sequence_number` and code.
 - [ ] Anchor-link merging follows spec §3.2:
