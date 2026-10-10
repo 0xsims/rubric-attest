@@ -23,6 +23,8 @@ All notable changes to this project are documented here. The format is based on
   makes no calls to the Rubric API. Its only dependency is
   `@noble/post-quantum` 0.3.0. It ships golden vectors generated from
   rubric-protocol's own code. Spec §4.5 (signed bytes) is filled in and O8 is closed.
+  The end-to-end test runs on one real mainnet tiered canary record, anchored at
+  topic 0.0.10416909 seq 309269, and passes. A real DAR fixture is still to do.
 - **`@rubric-protocol/attest-index` 1.3.0: anchor columns and `rubric-index-ingest`**
   (P6, `docs/specs/attestation-index-and-replay.md` §3.5). Schema v2 adds nullable
   `anchorId`, `aggregateRoot`, `hcsSequences`, `hcsConsensusTs` and `anchorConflict`

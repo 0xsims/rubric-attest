@@ -146,40 +146,102 @@ The report always lists all five steps: `signature`, `leaf`, `batch`,
   warnings }
 ```
 
-## Walkthrough: a mainnet bundle against the public mirror
+## Walkthrough: a real mainnet record against the public mirror
+
+`test/fixtures/mainnet/tiered/` holds one real mainnet record. It is an internal
+canary attestation whose payload is a commitment hash only:
+
+| | |
+|---|---|
+| Record | tiered warm record `02d03bdf-e810-4dfd-a3a0-926b5ad48684`, region `us`, issued 2026-10-10T06:35:13.293Z |
+| Anchor bundle | `d59658dd-e087-4363-922c-becb76e51494`, 1 tier-1 flush of 2 items |
+| On-chain | topic `0.0.10416909`, sequence `309269`, payer `0.0.3923341`, consensus `1791614183.102338104` (2026-10-10T06:36:23.102Z) |
+
+### Verify it live
+
+From a checkout of this repo:
+
+```
+npm ci && npm run build
+```
+
+Then this one command checks the record against the public Hedera mirror:
+
+```
+node packages/replay-verify/dist/bin.js \
+  --record packages/replay-verify/test/fixtures/mainnet/tiered/record.json \
+  --anchor-bundle packages/replay-verify/test/fixtures/mainnet/tiered/anchor-bundle.json
+```
+
+It makes exactly two kinds of request: the keys file from
+`https://rubric-protocol.com/.well-known/rubric-keys.json`, and the topic
+messages from `https://mainnet-public.mirrornode.hedera.com`. To make zero
+requests to rubric-protocol.com, add
+`--keys packages/replay-verify/test/fixtures/mainnet/tiered/rubric-keys.json`.
+That is a recorded copy of the keys file.
+
+### Output
+
+This is the real output for that record. It was run offline from the committed
+fixtures by `scripts/replay-fixture.mjs`, which runs the same CLI and the same
+network guard, but serves the recorded mirror message and keys file instead of
+the network:
+
+```
+$ F=packages/replay-verify/test/fixtures/mainnet/tiered
+$ node packages/replay-verify/scripts/replay-fixture.mjs \
+    $F/record.json $F/anchor-bundle.json $F/mirror-messages.json $F/rubric-keys.json
+rubric-replay: PASS (exit 0) — tiered record
+  all five steps PASS
+
+  [PASS       ] signature ML-DSA-65 over JCS(batch envelope) verifies under the published us key 1ffb9f4a-3ee9-4885-873e-3ba062149eaf
+  [PASS       ] leaf      leaf T = SHA-256(0x00 ‖ JCS(leafMessage)) = 615e7760dc3c6dbc10792408ff75c4d2984d6a3ae784fa89b8ac452d00bb0fea
+  [PASS       ] batch     leaf folds through 1 step(s) to the signed batch_root bd4243d80f95309356097f9ed988ab0834243e45d44ec5f979fcac31766f6f61; flush e0567078-9fa7-4cd2-a979-58e36a42eefa is in the anchor bundle
+  [PASS       ] aggregate aggregateRoot f0abe630454a1f5140c687dbc6ac4a05420eac8e67f41d910451d2aa69262cb2 recomputed from 1 tier-1 flush(es) (makeLeafV2 → buildTreeV3 → wrap)
+  [PASS       ] anchor    genuine anchor from 0.0.3923341 at seq 309269, consensus 1791614183.102338104; aggregateRoot matches
+
+  topic 0.0.10416909 via https://mainnet-public.mirrornode.hedera.com
+  anchorId d59658dd-e087-4363-922c-becb76e51494
+  anchor seq 309269, consensus 1791614183.102338104, payer 0.0.3923341, aggregateRoot f0abe630454a1f5140c687dbc6ac4a05420eac8e67f41d910451d2aa69262cb2
+  searched: sequences [309250-309288], time 2026-10-10T06:21:12.393Z .. 2026-10-10T07:36:12.393Z
+  anchor payers (built-in): 0.0.3923341
+```
+
+How the recorded case differs from a live run:
+
+* **Mirror window.** `mirror-messages.json` holds only the anchor message
+  (sequence 309269), fetched from the public mirror by the operator. A live run
+  reads every message in the window above, so its verdict can also reflect
+  other genuine messages there (for example, a retry of the same anchor).
+* **Keys file.** `rubric-keys.json` is rubric-web `main` at 0fa4b87, which has
+  no `anchorPayers` field yet. A live run fetches whatever is published at the
+  time. Once a fetched file lists `anchorPayers`, a list that omits
+  `0.0.3923341` adds a warning. Per §4.3 step 5, a fetched list never changes
+  which payers count.
+
+### Your own records
 
 Use any tiered warm record or completed DAR bundle you hold, plus its tier-2
 anchor bundle. For a warm record, the anchor bundle is the `<anchorId>.json`
-whose `tier1Flushes[]` contains the record's `stub.tier1FlushId`; the record's
-`anchors.hcs.anchor_id` names it once backfilled. For a DAR bundle it is
-`extensions.rubricDar.bridge.hop2.anchorId`.
+whose `tier1Flushes[]` contains the record's `stub.tier1FlushId`; once
+backfilled, the record's `anchors.hcs.anchor_id` names it. For a DAR bundle it
+is `extensions.rubricDar.bridge.hop2.anchorId`. Pass them as `--record` and
+`--anchor-bundle` as above.
 
-```
-npm ci
-npm run build
-# keys fetched from rubric-protocol.com over TLS:
-node packages/replay-verify/dist/bin.js \
-  --record ./<attestationId>.json \
-  --anchor-bundle ./<anchorId>.json
-# or with a pinned keys file obtained over another channel:
-node packages/replay-verify/dist/bin.js \
-  --record ./<attestationId>.json \
-  --anchor-bundle ./<anchorId>.json \
-  --keys ./rubric-keys.json --json
-```
+## Real mainnet fixtures (the end-to-end test)
 
-Expected output: **pending: run against the exported fixture.** Nothing has
-been run against a real mainnet record yet; see the next section.
+`test/mainnet.test.ts` replays every case under `test/fixtures/mainnet/`
+offline under the network guard. Each case must reach exit 0, both with the
+fetched keys file and with `--keys`. The test also checks that a one-character
+change to the real record gives `FAIL`.
 
-## Real mainnet fixtures (needed for the end-to-end test)
+* **`tiered/`** is present: the canary record above.
+* **`dar/`** is still to do. A real completed DAR bundle has not been exported
+  yet, so DAR is covered only by the synthetic golden vectors in
+  `test/vectors/`.
 
-`test/mainnet.test.ts` replays real cases offline under the network guard.
-Each case must reach exit 0. The test is **skipped** while
-`test/fixtures/mainnet/` is empty. The fixtures exist only on the production
-store, so a human must export them.
-
-Create one directory per case, `test/fixtures/mainnet/tiered/` and
-`test/fixtures/mainnet/dar/`, each holding:
+To add a case, create one directory, for example `test/fixtures/mainnet/dar/`,
+holding:
 
 | File | Where it comes from |
 |---|---|
@@ -192,12 +254,13 @@ Record the mirror messages (this contacts only the public mirror):
 
 ```
 node packages/replay-verify/scripts/record-mirror-window.mjs \
-  test/fixtures/mainnet/tiered/record.json \
-  test/fixtures/mainnet/tiered/anchor-bundle.json \
-  > test/fixtures/mainnet/tiered/mirror-messages.json
+  test/fixtures/mainnet/dar/record.json \
+  test/fixtures/mainnet/dar/anchor-bundle.json \
+  > test/fixtures/mainnet/dar/mirror-messages.json
 ```
 
-Run the same command for `dar/`, then `npm test`.
+Then run `npm test`. A single raw mirror message, wrapped in a one-element
+array, also works, as in `tiered/`.
 
 **Choose recent anchors** emitted by current rubric-protocol `main`. An anchor
 from before about 2026-08-11 has the flat `alg` block and is `UNSUPPORTED` by
