@@ -1,12 +1,21 @@
 # @tenprint/verify
 
+```
+npx @tenprint/verify --example
+```
+
+That verifies a real mainnet record bundled in the package (the
+[walkthrough](#walkthrough-a-real-mainnet-record-against-the-public-mirror)
+canary) live against the public Hedera mirror, with zero calls to the TenPrint
+API.
+
 `tenprint-verify` checks a TenPrint (formerly Rubric Protocol) attestation from
 its files and a public Hedera mirror node. It makes **no calls to the TenPrint
 API**. It works with a tiered
 warm record or a completed DAR bundle, together with the tier-2 anchor bundle
 that covers it. Spec: `docs/specs/attestation-index-and-replay.md` §4.
 
-> Status: 0.1.0, unreleased.
+> Status: 0.2.0, unreleased.
 
 **When to use which.** Use `tenprint-verify` when you want to check a record
 yourself, offline from our service, from the files plus the public ledger.
@@ -125,7 +134,14 @@ tenprint-verify --record <warm-record.json | dar-bundle.json>
                 [--mirror https://mainnet-public.mirrornode.hedera.com]
                 [--topic 0.0.10416909]
                 [--json]
+tenprint-verify --example [--mirror <base-url>] [--json]
 ```
+
+`--example` verifies the bundled canary case below. It reads `record.json`,
+`anchor-bundle.json` and `rubric-keys.json` from the package's
+`test/fixtures/mainnet/tiered/`, and pins that keys file as with `--keys`. So its
+only requests go to the mirror, and it makes none to rubric-protocol.com. It
+cannot be combined with `--record`, `--anchor-bundle`, `--keys` or `--topic`.
 
 | Exit | Meaning |
 |---|---|
@@ -160,8 +176,10 @@ canary attestation whose payload is a commitment hash only:
 
 ### Verify it live
 
-From a checkout of this repo (the package source lives in
-`packages/replay-verify/`; `dist/bin.js` is the `tenprint-verify` bin):
+`npx @tenprint/verify --example` runs this case with the recorded keys file
+pinned. To fetch the published keys file instead, work from a checkout of this
+repo (the package source lives in `packages/replay-verify/`; `dist/bin.js` is
+the `tenprint-verify` bin):
 
 ```
 npm ci && npm run build
@@ -237,7 +255,9 @@ offline under the network guard. Each case must reach exit 0, both with the
 fetched keys file and with `--keys`. The test also checks that a one-character
 change to the real record gives `FAIL`.
 
-* **`tiered/`** is present: the canary record above.
+* **`tiered/`** is present: the canary record above. Its `record.json`,
+  `anchor-bundle.json` and `rubric-keys.json` are also published in the
+  package, for `--example`.
 * **`dar/`** is still to do. A real completed DAR bundle has not been exported
   yet, so DAR is covered only by the synthetic golden vectors in
   `test/vectors/`.

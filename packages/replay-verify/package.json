@@ -1,6 +1,6 @@
 {
   "name": "@tenprint/verify",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "type": "module",
   "description": "Standalone verifier for TenPrint (formerly Rubric Protocol) tiered and DAR attestations: ML-DSA-65 signature, Merkle fold, and the HCS anchor on a public mirror node. Makes no calls to the TenPrint API.",
@@ -22,7 +22,13 @@
   "bin": {
     "tenprint-verify": "dist/bin.js"
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src",
+    "test/fixtures/mainnet/tiered/record.json",
+    "test/fixtures/mainnet/tiered/anchor-bundle.json",
+    "test/fixtures/mainnet/tiered/rubric-keys.json"
+  ],
   "engines": {
     "node": ">=20"
   },

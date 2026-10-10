@@ -19,11 +19,19 @@ describe("package.json", () => {
     expect(pkg.dependencies).toEqual({ "@noble/post-quantum": "0.3.0" });
   });
 
-  it("is @tenprint/verify 0.1.0 with the tenprint-verify bin", () => {
+  it("is @tenprint/verify 0.2.0 with the tenprint-verify bin", () => {
     expect(pkg.name).toBe("@tenprint/verify");
-    expect(pkg.version).toBe("0.1.0");
+    expect(pkg.version).toBe("0.2.0");
     expect(pkg.license).toBe("Apache-2.0");
-    expect(pkg.bin).toEqual({ "tenprint-verify": "./dist/bin.js" });
+    expect(pkg.bin).toEqual({ "tenprint-verify": "dist/bin.js" });
+  });
+
+  it("publishes the --example canary files, and only those fixtures", () => {
+    expect(pkg.files.filter((f: string) => f.startsWith("test/"))).toEqual([
+      "test/fixtures/mainnet/tiered/record.json",
+      "test/fixtures/mainnet/tiered/anchor-bundle.json",
+      "test/fixtures/mainnet/tiered/rubric-keys.json",
+    ]);
   });
 });
 
