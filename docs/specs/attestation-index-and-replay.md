@@ -1,8 +1,10 @@
 # Attestation index, replay verifier, and anchor drift check
 
 Status: **draft**. P6 is built (rubric-protocol anchor links and mirror
-backfill behind a default-off flag; attest-index 1.3.0 ingest); the
-decision-verify step, P7 and P8 are design only. Covers phases P6, P7 and P8; task
+backfill behind a default-off flag; attest-index 1.3.0 ingest). P7 is built
+as `packages/replay-verify`, package `@tenprint/verify` (unreleased; §4.5 and
+O8 settled by P7 step 1).
+The decision-verify step and P8 are design only. Covers phases P6, P7 and P8; task
 files are `tasks/P6-index.md`, `tasks/P7-replay.md`, `tasks/P7a-anchor-payers.md`,
 `tasks/P8-drift-check.md`.
 
@@ -38,8 +40,8 @@ Each bundle type is written in a different place:
 
 | Bundle type | Written at | Indexed today by |
 |---|---|---|
-| Tiered (default `/v1/tiered-attest`) | `rubric-protocol/src/verify/tiered-aggregator.ts` stubs `:321`, signed batch bundle `:404`, warm record per item `:424-455` | the jsonl (§3.1), via `appendIndexEntry` in `onTier1Flush` (`src/aggregator/index.ts:297-311`) |
-| Tier-2 anchor bundle `<anchorId>.json` | `tiered-aggregator.ts:503-509` (`seqNum: null`) | none (P6 adds anchor-link lines to the jsonl) |
+| Tiered (default `/v1/tiered-attest`) | `rubric-protocol/src/verify/tiered-aggregator.ts` stubs file `stubs-<flushId>.json` `:347-348`, batch envelope signed `:400-409`, signed batch bundle `:412-431`, warm record per item `:457-519` | the jsonl (§3.1), via `appendIndexEntry` in `onTier1Flush` (`src/aggregator/index.ts:139-159`) |
+| Tier-2 anchor bundle `<anchorId>.json` | `tiered-aggregator.ts:563-569` (`seqNum: null`; federation block patched in later, `:620-623`) | none (P6 adds anchor-link lines to the jsonl) |
 | Direct (`/v1/attest`) | `src/verify/attestation-publisher.ts:270` | the jsonl, via `server.ts` `indexEntry()` `:307`, called `:692` |
 | Threshold multisig | `src/api/threshold-endpoint.ts:494` | the jsonl, via `appendIndexEntry` `:500` |
 | DAR | `src/api/dar-emit.ts` `TieredDarTransport.store()` `:501` (pending), `Enricher.enrichOne` `:957-983` (completed) | the jsonl as its tiered stub; attest-index via offline backfill only (`deploy-bundle/run-backfill.mjs`) |
@@ -68,14 +70,19 @@ and `decisionHash` are `NOT NULL`. `decisionId` has a global unique index.
 | namespace | write | Not a field anywhere. It only exists as the `ns_<12 hex>/` prefix on DAR agentIds (`src/billing/dar-namespace.ts:15`). |
 | `decisionId` | write, DAR only | DAR bundle and `dar-ids/` binding (`dar-emit.ts:403, 519`). The tiered stub only carries `payload_commitment`. |
 | `leafHash` | write | Tiered batch leaf `SHA-256(0x00 ‖ JCS(leafMessage))` (`tier1-worker.ts:142`). The DAR leaf is `sha3-256:` over JCS(core), per `spec/dar-0.1.md` §4.3. |
-| `anchorId`, `aggregateRoot` | next tier-2 flush | `tiered-aggregator.ts:489-501` |
+| `anchorId`, `aggregateRoot` | next tier-2 flush | `tiered-aggregator.ts:549-561` |
 | HCS sequence | after submit | Redis `rubric:tier2:seq:*` (30-day TTL), tier-2 bundle `seqNum`, warm-record backfill (`aggregator/index.ts:68-82, 233-266`) |
-| HCS consensus timestamp | **never recorded for tier-2** | `publishTier2Anchor` calls `getReceipt()`, not `getRecord()` (`attestation-publisher.ts:441-442`). `anchorConfirmedAt` is the local wall clock. Direct attestations do record it (`:254-267`). |
+| HCS consensus timestamp | **never recorded for tier-2** | `publishTier2Anchor` calls `getReceipt()`, not `getRecord()` (`attestation-publisher.ts:448-449`). `anchorConfirmedAt` is the local wall clock. Direct attestations do record it (`:254-267`). |
 
 ### 2.4 The anchor message
 
 Built in `AttestationPublisher.publishTier2Anchor`
-(`rubric-protocol/src/verify/attestation-publisher.ts:380-446`):
+(`rubric-protocol/src/verify/attestation-publisher.ts:388-454`; the `alg`
+block is `:397-414`). The serialized message is `JSON.stringify` of the object
+below in this key order (not JCS); verifiers parse it and never re-serialize it.
+`anchoredAt` here is `new Date()` at publish time (`:427`), so it is later than
+the tier-2 bundle's `anchoredAt` (flush time, `tiered-aggregator.ts:550`), by
+minutes for a retry:
 
 ```ts
 { type: "RUBRIC_TIER2_ANCHOR", schemaVersion: "rubric-anchor/2", treeVersion: 3,
@@ -92,11 +99,11 @@ Built in `AttestationPublisher.publishTier2Anchor`
 ```
 
 * Batch roots are **not** on-chain. They exist only in the tier-2 anchor
-  bundle's `tier1Flushes[].forestRoot` (`tiered-aggregator.ts:507`).
+  bundle's `tier1Flushes[].forestRoot` (`tiered-aggregator.ts:567`).
 * `prevAnchorId` is emitted only when `prevFederationSigHash` is set
-  (`:418`). That only happens when federation quorum was met, and the value is
-  held in memory, so it resets on restart (`tiered-aggregator.ts:563`). The
-  retry drainer drops both `prev*` fields (`aggregator/index.ts:370-383`).
+  (`:426`). That only happens when federation quorum was met, and the value is
+  held in memory, so it resets on restart (`tiered-aggregator.ts:122-123,
+  624`). The retry drainer drops both `prev*` fields (`aggregator/index.ts:217-231`).
 * Messages of 1024 bytes or more are chunked (`setMaxChunks(20)`), and chunks
   can arrive out of order. `TopicMessageSubmitTransaction.execute()` returns
   `executeAll()[0]`, so the receipt's `topicSequenceNumber` (what the anchor
@@ -107,12 +114,20 @@ Built in `AttestationPublisher.publishTier2Anchor`
   2026-08-11T11:00Z (for example sequences 286821–286823) carry
   `schemaVersion: "rubric-anchor/2"`, `treeVersion: 3` and a flat block
   `{leaf, node, aggregate, zk, canonicalization, domainSeparation: "RFC6962",
-  merkleOdd: "duplicate"}` with no `levels`. Later messages (from sequence
-  286834) carry `levels`, but each level also has descriptive keys (`leaf`,
-  `node`, `leafPre`, `rule`) beyond `{hash, domainSeparation, merkleOdd}`.
-  §4.3 step 5 asks for `alg.levels` deep-equal to the block above, which
-  neither shape is. P7 step 1 must settle this (§6 O8). P6 does not read
-  `alg`.
+  merkleOdd: "duplicate"}` with no `levels`. That label does not describe the
+  code (neither `buildTreeV2` nor `buildTreeV3` duplicates an odd node); it is
+  most likely a stale label over V3, but that is unconfirmed. P6 step 1 also
+  reported later messages (from sequence 286834) whose levels carry
+  descriptive keys (`leaf`, `node`, `leafPre`, `rule`) beyond `{hash,
+  domainSeparation, merkleOdd}`. rubric-protocol `main` (54afb5a1) does **not**
+  emit that variant: it emits exactly the block above
+  (`attestation-publisher.ts:397-414`), and the latest message checked (seq
+  309191, 2026-10-10) appears to carry it too. The descriptive-keys variant is
+  unconfirmed. **O8 is closed (P7 step 1):** v1 of the replay verifier accepts
+  only the block above, compared as a whole (§4.3 step 5, Format); the flat
+  block is `UNSUPPORTED` (`ALG_LEGACY_FLAT`) and every other shape is
+  `UNSUPPORTED` (`ALG_UNSUPPORTED`). A variant is added only with a real
+  fixture whose root it recomputes. P6 does not read `alg`.
 
 ### 2.5 Merkle code in rubric-protocol (the reference implementation for P7)
 
@@ -121,28 +136,29 @@ unprefixed hex.
 
 | Level | Construction | Reference |
 |---|---|---|
-| batch leaf | `SHA-256(0x00 ‖ utf8(JCS(leafMessage)))` | `buildTieredLeafMessage` `spec-merkle.ts:52`, `leafHash()` `:73` |
-| batch node | `SHA-256(0x01 ‖ L ‖ R)` over raw 32-byte digests. A lone node is promoted and adds **no** proof step. | `nodeHash()` `:80`, `buildSpecTree()` `:95`, `proofForLeaf()` `:114`, `verifyProof()` `:131` |
+| batch leaf | `SHA-256(0x00 ‖ utf8(JCS(leafMessage)))` | `buildTieredLeafMessage` `spec-merkle.ts:52-67`, `leafHash()` `:73-77`; computed `tier1-worker.ts:98-119` |
+| batch node | `SHA-256(0x01 ‖ L ‖ R)` over raw 32-byte digests. A lone node is promoted (`:103`) and adds **no** proof step (`:122`). A direction names the **sibling's** side: `"L"` → `H(0x01 ‖ sib ‖ acc)`, `"R"` → `H(0x01 ‖ acc ‖ sib)`. | `nodeHash()` `:80`, `buildSpecTree()` `:95`, `proofForLeaf()` `:114`, `verifyProof()` `:131` |
 | batch root | The `buildSpecTree` root, as bare hex. It is the signed `envelope.batch_root`, and it is stored as `forestRoot` (`tier1-worker.ts:126-136`). | |
-| aggregate leaf | `"sha3-256:" + hex(SHA3-256(utf8(JCS({__leafType:"DOCUMENT_HASH", forestRoot, itemCount}))))` | `makeLeafV2` `merkle.ts:74`, `hashData` `:52`; called at `tiered-aggregator.ts:494` |
-| aggregate tree | Leaf tag: strip the `sha3-256:` prefix, then `SHA3-256(0x00 ‖ rawbytes)`. Node: `SHA3-256(0x01 ‖ L ‖ R)`. Odd node: promote. | `buildTreeV3()` `merkle.ts:207`. `buildTreeV2` (`:134`) is kept only for pre-RUBRIC-SEC-2026-001 anchors. |
-| wrap | `aggregateRoot = hex(SHA3-256(utf8(hexRoot ‖ hexRoot)))`, which hashes the **128-character hex string**, not 64 raw bytes | `buildForest()` `merkle.ts:284` with one tree, `rawHash` `:58`; called at `tiered-aggregator.ts:500` |
-| JCS | RFC 8785 | `canonicalize()` `src/verify/canonical.ts:33` |
+| aggregate leaf | `"sha3-256:" + hex(SHA3-256(utf8('{"__leafType":"DOCUMENT_HASH","forestRoot":"<hex>","itemCount":<int>}')))`, i.e. JCS of `{__leafType, forestRoot, itemCount}`. `flushId` is the leaf label only and is **not** hashed. | `makeLeafV2` `merkle.ts:74-76`, `hashData` `:52-55`; called at `tiered-aggregator.ts:553-555` |
+| aggregate tree | Leaf tag: strip up to the last `:` (`:214`), then `SHA3-256(0x00 ‖ 32 raw bytes)` (`:218`). Node: `SHA3-256(0x01 ‖ L ‖ R)` (`:221`). Odd node: promote (`:236`). With one flush the root is the **tagged** leaf. | `buildTreeV3()` `merkle.ts:207`; called at `tiered-aggregator.ts:559`. `buildTreeV2` (`:134`) is kept only for pre-RUBRIC-SEC-2026-001 anchors. |
+| wrap | `aggregateRoot = hex(SHA3-256(utf8(hexRoot ‖ hexRoot)))`, which hashes the **128-character hex string**, not 64 raw bytes. Always applied (one tree is padded to `[r, r]`, `:286`). | `buildForest()` `merkle.ts:284-291` with one tree, `rawHash` `:58-60`; called at `tiered-aggregator.ts:560-561` |
+| JCS | RFC 8785: keys sorted by UTF-16 code units, numbers `String(n)`, only `"`, `\` and U+0000–U+001F escaped | `canonicalize()` `src/verify/canonical.ts:33` |
 
 The tier-1 batch bundle is signed with ML-DSA-65 over JCS of the **batch
 envelope** `{rubric_version, attestation_type, batch_root, batch_size,
-flush_id, issuer_node_region, issued_at}` (`tiered-aggregator.ts:372-382`,
+flush_id, issuer_node_region, issued_at}` (`tiered-aggregator.ts:400-409`,
 `signCanonical`). The signature and the signer's `publicKey` (base64) are
-copied onto every stub. Records do **not** carry a `keyId`.
+copied onto every stub (`:435-438`). Records do **not** carry a `keyId`. The
+exact bytes are in §4.5.
 
 Warm records store the leaf → batch-root proof as two arrays: sibling hashes in
 `merkle_proof` and the `L`/`R` side of each step in `merkle_proof_directions`
-(`tiered-aggregator.ts:436-437`). They also store the full `leafMessage`. **The
+(`tiered-aggregator.ts:477-478`). They also store the full `leafMessage`. **The
 batch-root → aggregate path is not stored per record.**
-`anchor-check.ts:107-125` rebuilds it from the tier-2 anchor bundle.
+`src/api/anchor-check.ts:107-125` rebuilds it from the tier-2 anchor bundle.
 
 Retries can publish the same `anchorId` more than once: the retry drainer
-re-publishes (`aggregator/index.ts:370-383`). rubric-protocol code never sets a
+re-publishes (`aggregator/index.ts:217-231`). rubric-protocol code never sets a
 `submitKey` on the topic. The mirror node shows topic `0.0.10416909` with
 `submit_key: null` and `admin_key: null`: the topic is immutable, a submit key
 can never be added, and **anyone can post a message on it**. Origin is
@@ -550,21 +566,34 @@ anchor data. Its anchor columns come only from the jsonl.
 
 ### 4.1 Package and inputs
 
-New package `packages/replay-verify`, published as
-`@rubric-protocol/replay-verify`, with a `rubric-replay` bin. Its only runtime
-dependencies are an ML-DSA-65 implementation (FIPS 204, the same library the
-service signs with, or `@noble/post-quantum`, to be picked in P7 step 1 with
-crypto review), a SHA-2/SHA-3 implementation, and a JCS implementation.
-**It does not depend on any other `@rubric-protocol/*` package.** Verification
+New package `packages/replay-verify`, published as `@tenprint/verify` (name
+decided by the operator, 2026-10-10; npm org `tenprint`), with a
+`tenprint-verify` bin. Its only runtime
+dependency is `@noble/post-quantum`, pinned to exactly `0.3.0`, the library and
+version the service signs with (`rubric-protocol/package.json:25`,
+`oracle.ts:177-192`; picked in P7 step 1 with crypto review). Verification
+calls `ml_dsa65.verify(publicKey, msg, sig)` (that argument order in 0.3.0,
+empty context), never `ml_dsa65.internal.verify`, and a throw counts as an
+invalid signature. An upgrade is gated on a committed known-answer vector,
+because later versions may change the argument order. SHA-256 and SHA3-256
+come from `node:crypto`; JCS is a small in-package implementation with the
+semantics of `canonical.ts`.
+**It does not depend on any `@rubric-protocol/*` or other `@tenprint/*` package.** Verification
 must not be able to pick up service code by accident.
 
+`--record` is either a **tiered warm record** (`<attestationId>.json` from the
+warm or cold store, §3.4; a file holding a JSON array is accepted only if
+exactly one element is a tiered record, `warm-backfill.ts:104-112`) or a
+**completed DAR bundle** (`decisions/<day>/<decisionId>.json`). Anything else,
+or a file that is not JSON, exits 2.
+
 ```
-rubric-replay --record <warm-record.json | dar-bundle.json>
-              --anchor-bundle <anchorId>.json
-              [--keys <rubric-keys.json>]     # offline / pinned keys; skips the fetch
-              [--mirror <base-url>]           # default https://mainnet-public.mirrornode.hedera.com
-              [--topic 0.0.10416909]
-              [--json]
+tenprint-verify --record <warm-record.json | dar-bundle.json>
+                --anchor-bundle <anchorId>.json
+                [--keys <rubric-keys.json>]     # offline / pinned keys; skips the fetch
+                [--mirror <base-url>]           # default https://mainnet-public.mirrornode.hedera.com
+                [--topic 0.0.10416909]
+                [--json]
 ```
 
 The verifier needs **two input files**, because the batch → aggregate path is
@@ -582,9 +611,21 @@ The verifier may make exactly these requests:
 
 It must make no other requests. It does not read the topic's `submit_key`:
 the topic is immutable with no key (D4). In particular it does not call `/v1/*`, does
-not follow the keys file's `attestation.verify` link, and does not fall back to
+not follow the keys file's `attestation.verify` link, does not request the
+topic itself (`/api/v1/topics/<topic>`), and does not fall back to
 `mainnet.mirrornode.hedera.com`. The allowlist is enforced in code: one
 `fetch` wrapper rejects any other URL.
+
+*As built (P7):* request 2 is only the list form
+`GET <mirror>/api/v1/topics/<topic>/messages?<query>` (a `sequencenumber`
+range around a hint, or a `timestamp` window), and each `links.next`, which
+is resolved against the mirror origin and checked again. The by-sequence
+form `/messages/<seq>` is not used and is rejected. Requests are `GET` with
+`redirect: "error"`, so a redirect cannot leave the allowlist. `--mirror` must
+be `https`, and `mainnet.mirrornode.hedera.com` or any `rubric-protocol.com`
+host is refused as a mirror (exit 2). A 429, 5xx or network error is retried
+with exponential backoff, at most 5 retries per page; then the step is
+`UNAVAILABLE`.
 
 ### 4.3 Steps
 
@@ -595,6 +636,29 @@ The steps form one chain of bindings. Each value is checked against the one
 before it, and **no step accepts a value only because it came from an input
 file**. The signed envelope is the root of trust for everything below it, and
 the anchor message is the root of trust for everything above it.
+
+**Input rules (all steps).** These close the RUBRIC-SEC-2026-001 class of
+defect, where `Buffer.from(s, "hex")` silently stops at the first bad
+character:
+
+* Roots, leaves and proof siblings must match `^[0-9a-f]{64}$` (lowercase,
+  exactly 32 bytes). A DAR leaf `L` must match `^sha3-256:[0-9a-f]{64}$`.
+* An ML-DSA-65 signature must match `^[0-9a-f]{6618}$` (3309 bytes).
+* A `publicKey` must be canonical base64 (re-encoding the decoded bytes gives
+  the same string) and decode to exactly 1952 bytes. Keys are compared as
+  bytes.
+* Proof directions must be exactly `"L"` or `"R"`. The server is looser
+  (`spec-merkle.ts:135`, `dar-emit.ts:249` default a missing direction); the
+  verifier is not.
+* `batch_size`, `itemCount`, `tier1Count` and `totalItems` must be positive
+  safe integers of JSON type number.
+* A value that cannot be canonicalized (a lone UTF-16 surrogate, which
+  `canonical.ts` would encode lossily) is `UNSUPPORTED` (`JCS_UNREPRESENTABLE`).
+* A malformed field is `FAIL` (`MALFORMED`) in the step that reads it.
+* **Duplicate fields must agree, else `FAIL`.** A record repeats several
+  values; the verifier reads the source of truth named below and checks every
+  copy that is present against it, so a value is never accepted from a copy
+  the checks did not cover.
 
 1. **Signature.**
    * The verification key comes **only** from the keys file. A region can
@@ -610,16 +674,105 @@ the anchor message is the root of trust for everything above it.
      envelope's own `issued_at` is never used for this, because the signer
      controls it. So a step 1 that used a retired key is final only after
      step 5, and it is never `PASS` if step 5 did not find a genuine anchor.
+     If step 5 found no anchor only because the mirror was unreachable
+     (step 5 `UNAVAILABLE`), the step is `UNAVAILABLE` (`NOT_RUN`, exit 4)
+     instead of `KEY_RETIRED`, for the tiered, `tier1-batch` and
+     `tier2-federation` branches alike.
      (The retired `legacy-shared-2026h1` key is one key listed for all five
      regions, so selecting by region does not narrow it.)
+   * **Retired keys and a non-default `--mirror`.** The consensus time that
+     places a retired key before its `rotatedAt` comes from the mirror. A
+     mirror other than the default `https://mainnet-public.mirrornode.hedera.com`
+     is the user's choice and could report any time, so a retired key accepted
+     on its time is `UNSUPPORTED` (`KEY_RETIRED_UNTRUSTED_MIRROR`, exit 3),
+     never `PASS`. Under `tier2-federation` such an entry does not count; the
+     step is `KEY_RETIRED_UNTRUSTED_MIRROR` only if the quorum is not met
+     without it.
    * **The embedded `publicKey` is never used to verify on its own.**
      Otherwise any self-signed forgery would pass.
    * Verify ML-DSA-65 over the signed bytes for the bundle kind (§4.5).
+   * **Tiered.** The envelope must have exactly the seven keys of §4.5, with
+     `attestation_type: "tiered"` and `rubric_version: "1.0"` (the same key
+     signs other message types with no context string, so the shape is the
+     domain separation). The sources of truth are `tier1.envelope`,
+     `tier1.signature` and `tier1.publicKey`; the top-level and
+     `stub.signature`/`stub.publicKey` copies must equal them. A valid
+     signature under a published key is `PASS`; an invalid one is `FAIL`.
+   * **DAR.** A completed DAR bundle carries no embedded `publicKey` and no
+     batch envelope. `signature.source` selects the branch (`dar-emit.ts:949-953`);
+     `signature.over` is a label and is ignored. Any other `source` is
+     `UNSUPPORTED` (`SIGNATURE_SOURCE_UNSUPPORTED`).
+     * `"tier2-federation"` (used whenever the anchor bundle had a federation
+       block): `signature.raw` is that block. `raw.signedFields` must have
+       exactly the keys of §4.5 with `attestation_type:
+       "threshold-multisig"`, `subject: "tier2-aggregate"`, `anchor_id ===
+       anchorBundle.attestationId`, `aggregate_root ===` the step 4 computed
+       root, `tier1_count === tier1Flushes.length`, `total_items ===` the sum
+       of `itemCount`, and `anchored_at === anchorBundle.anchoredAt` (the
+       bundle's, not the message's). Each `raw.signatures[]` entry
+       `{region, publicKey, signature}` counts only if its `publicKey`
+       byte-matches a keys-file signer of that `region` (retired rule above)
+       and its signature verifies; an entry under a published key that does
+       not verify is `FAIL`. `PASS` needs at least
+       `max(3, signedFields.quorum.required)` entries that count, from
+       distinct regions **and** distinct keys (the retired
+       `legacy-shared-2026h1` key is one key for all five regions, so it
+       counts once). The floor of 3 holds even if the signed `quorum.required`
+       is lower; a higher `quorum.required` raises it. Fewer is `UNSUPPORTED`:
+       `KEY_RETIRED` if an entry was dropped by the retired rule (or
+       `UNAVAILABLE` as above), else `KEY_RETIRED_UNTRUSTED_MIRROR` if one was
+       dropped by the mirror rule, else `KEY_NOT_PUBLISHED` if no entry's key
+       is published, else `FEDERATION_QUORUM_UNVERIFIED`.
+       `quorumMet`, `obtained` and the other counters are never trusted.
+     * `"tier1-batch"`: `signature.signature` is the batch signature hex.
+       The envelope is rebuilt (§4.5) from the leaf message and the one
+       `tier1Flushes[]` entry whose `forestRoot` equals `hop1.batchRoot`.
+       There is no embedded key, so every keys-file signer of
+       `leafMessage.issuer_node_region` is tried (retired rule applies to the
+       one that verifies). If none verifies, the step is `UNSUPPORTED`
+       (`KEY_NOT_PUBLISHED`): an unlisted key cannot be told apart from a
+       forgery, and neither is ever `PASS`. `signature.raw` is not compared
+       with the hex (§4.5). Not yet confirmed on a real bundle.
 2. **Leaf.**
-   * Tiered: recompute `SHA-256(0x00 ‖ utf8(JCS(leafMessage)))` and compare it
-     to the record's leaf.
-   * DAR: recompute `sha3-256:` over JCS(core) (`spec/dar-0.1.md` §4.3), then
-     follow the bridge hops (`dar-emit.ts:960-976`) to the tiered leaf.
+   * Tiered: recompute `T = SHA-256(0x00 ‖ utf8(JCS(leafMessage)))` from
+     `stub.leafMessage` and compare it to `stub.leafHash` (and `stub.treeRoot`
+     when present). `SHA-256(utf8(JCS(leafMessage)))` must equal
+     `stub.payloadHash` and the top-level `payload_hash` when present. The
+     leaf message must have `rubric_version: "1.0"`, `attestation_type:
+     "tiered"`, `attestation_id` equal to the record's `attestation_id` and
+     `stub.attestationId`, and `issued_at` and `issuer_node_region` equal to
+     the signed envelope's (`tier1-worker.ts:99-101`,
+     `tiered-aggregator.ts:406-407`).
+   * DAR: first enforce `spec/dar-0.1.md` on the core, then recompute
+     `L = "sha3-256:" + hex(SHA3-256(utf8(JCS(dar))))`
+     (`spec/dar-0.1.md` §4.3). The core checks, in order:
+     * `v` must be exactly `"DAR/0.1"`. Any other `DAR/<major>.<minor>` tag
+       (an unknown major, or a higher minor) is `UNSUPPORTED`
+       (`DAR_VERSION_UNSUPPORTED`): dar-0.1 §5.1 forbids claiming leaf
+       verification for it ("needs-upgrade"), and its unknown fields are not
+       stripped. This is checked before the key set, since a higher minor may
+       add fields.
+     * Exactly the §2 field set: the required `agentId`, `decisionHash`,
+       `decisionId`, `inputHash`, `leafType`, `outputHash`, `prev`,
+       `schemaHash`, `ts`, `v`, and optionally `adapter` and `schemaRef`.
+       Nothing else (a raw `input`, `output` or `decision` field is a
+       violation).
+     * `schemaHash`, `inputHash`, `outputHash` and `decisionHash` match
+       `^sha3-256:[0-9a-f]{64}$` (§4.2: any other prefix is rejected).
+     * `decisionHash` equals `"sha3-256:" + hex(SHA3-256(utf8(JCS({schemaHash,
+       inputHash, outputHash}))))`, recomputed (§2.1).
+     * `leafType` is one of `"decision"`, `"schema-change"`, `"checkpoint"`
+       (§2; unknown values are a verify error).
+     * The §2 JSON types: `agentId` a non-empty string, `decisionId` a ULID
+       (26 Crockford base32 characters), `ts` a string, `prev` a string or
+       `null`, `schemaRef` a string, `adapter` exactly `{name: string,
+       version: string}`.
+
+     Any violation other than the version is `FAIL` (`DAR_CORE_INVALID`).
+     Then follow the bridge hops in §4.5
+     (`dar-emit.ts:228-230, 240-273, 883-934, 957-982`) to the tiered leaf
+     `T`. `leafMessage.payload` with `payload_commitment` (salted) instead of
+     `payload_hash_unsalted` is `UNSUPPORTED` (`PAYLOAD_COMMITMENT`) in v1.
 3. **Leaf → signed batch root.**
    * Fold the leaf using `merkle_proof` (sibling hashes) and
      `merkle_proof_directions` (`L`/`R`). The node rule is the `batch` level
@@ -629,12 +782,34 @@ the anchor message is the root of trust for everything above it.
    * Exactly one `anchorBundle.tier1Flushes[]` entry MUST have
      `flushId === envelope.flush_id`, `forestRoot === envelope.batch_root` and
      `itemCount === envelope.batch_size`. Anything else is `FAIL`.
+   * Tiered copies that must agree with the envelope: top-level `batch_root`,
+     `batch_size`; `stub.batchRoot`, `stub.batchSize`, `stub.tier1FlushId`
+     (or legacy `stub.flushId`), `stub.issuedAt`, `stub.issuerNodeRegion`
+     (the server's own binding check, `tiered-verify.ts:95-101`); and
+     `stub.merkleProof`/`stub.merkleProofDirections` against the top-level
+     arrays. A record whose `anchors.hcs.anchor_id` is set must name the
+     anchor bundle's `attestationId`.
+   * DAR: fold `T` along `hop1.path` (`{sibling, siblingDirection}`, the same
+     rule) to `hop1.batchRoot`. Exactly one `tier1Flushes[]` entry has
+     `forestRoot === hop1.batchRoot`; its `flushId` must equal `hop2.flushId`
+     when that is non-null. `hop2.tier1FlushRoots` must equal the bundle's
+     roots in order, and `hop2.anchorId` must equal
+     `anchorBundle.attestationId`. Under the `tier2-federation` branch the
+     batch root is not signed by itself; it is bound by step 4 to the signed,
+     anchored `aggregateRoot`.
 4. **Batch roots → aggregateRoot.**
    * Rebuild the aggregate tree from `tier1Flushes[]` in bundle order, using
      the `aggregate` level with leaves built exactly as `makeLeafV2` (§2.5).
    * Apply `wrap` (§2.5).
    * The result is the computed `aggregateRoot`. `anchorBundle.aggregateRoot`
      is only a hint and is not trusted; step 5 checks the computed value.
+     A hint (or DAR `hop2.aggregateRoot`) that differs from the computed value
+     is `FAIL`, as is a bundle `totalItems` that is not the `itemCount` sum.
+   * The bundle's id key is `attestationId` (`tiered-aggregator.ts:566`); there
+     is no `anchorId` key. A bundle `treeVersion` other than 3 is `UNSUPPORTED`
+     (`TREE_VERSION_UNSUPPORTED`). `flushId`, `zkPayloadRoot` and the message's
+     `tier1Count`/`totalItems` and zk fields are not committed by
+     `aggregateRoot`; they are consistency checks only.
 5. **Anchor message.**
    * **Message origin.** The topic has no submit key and never can (D4), so
      origin rests on the payer alone. The check runs **per chunk, before
@@ -686,24 +861,56 @@ the anchor message is the root of trust for everything above it.
      report states the source: `keys-file` (from `--keys`) or `built-in`.
      `anchorPayers` is not covered by the keys file's attestation (§2.6), so
      when the source is `keys-file` the report labels the list unattested.
+   * **Topic.** When the record names a topic (tiered
+     `anchors.hcs.topic_id`, DAR `anchorRef.topicId`; a missing, `null` or
+     empty value is not compared), it must equal the topic being searched
+     (`--topic`, default `0.0.10416909`). A mismatch is `FAIL`
+     (`TOPIC_MISMATCH`).
    * **Locating the message.**
-     * Find every `RUBRIC_TIER2_ANCHOR` message whose `anchorId` matches. Use
-       the record's `anchors.hcs.sequence_number` as a starting point if
-       present, and search `anchoredAt ± 15 min` regardless, so that
-       duplicates are seen.
+     * Find every `RUBRIC_TIER2_ANCHOR` message whose `anchorId` matches the
+       anchor bundle's `attestationId`. Use the record's
+       `anchors.hcs.sequence_number` (a JSON number, first anchor only,
+       `warm-backfill.ts:141`), the DAR `anchorRef.sequenceNumber` or the
+       bundle `seqNum` as a starting point if present, and search the time
+       window regardless, so that duplicates are seen. A hint is only a hint:
+       `anchors.hcs.tx_id` and `consensus_timestamp` are never filled and are
+       never read.
+     * *As built:* a hint `s` fetches sequences `s − 19 … s + 19` (enough for
+       a 20-chunk message). The time window is centred on the bundle's
+       `anchoredAt` (flush time): **15 min before, 60 min after**, because the
+       message's own `anchoredAt` and consensus time are publish time, and a
+       retry publishes at least a minute later (§2.4, `aggregator/index.ts:205-231`).
+       A duplicate published outside the window is not seen; the report says
+       which window was searched. Every page, including every
+       `links.next`, must be fetched, or the step is `UNAVAILABLE`.
+     * A genuine `RUBRIC_TIER2_ANCHOR` message at a hinted sequence whose
+       `anchorId` is not the bundle's is `FAIL` (`ANCHOR_ID_MISMATCH`).
      * Reassemble chunks that passed the origin check by
-       `initial_transaction_id` and chunk number.
+       `initial_transaction_id` and chunk number. The group key is the full
+       `initial_transaction_id` (`account_id`, `transaction_valid_start`,
+       `nonce`, `scheduled`). Each chunk's `message` is strict base64,
+       decoded on its own, and the bytes are concatenated in chunk order and
+       then decoded as UTF-8 with `fatal: true`. A group with an inconsistent
+       `total` or a repeated chunk number is dropped. The message's
+       `sequence_number`, `consensus_timestamp` and `payer_account_id` are
+       chunk 1's (the P6 chunk-1 rule, §3.4).
      * Only messages rebuilt that way count. A message that still lacks any
        chunk `1..total` after foreign chunks are dropped does not count.
    * **Duplicates.** Retries can produce several messages with the same
      `anchorId` (§2.5). All of them MUST carry the same `aggregateRoot`;
      conflicting roots are `FAIL` (`DUPLICATE_ANCHOR_CONFLICT`). Report the
      earliest `consensus_timestamp`.
-   * **Format.** Require `schemaVersion = "rubric-anchor/2"`,
-     `treeVersion = 3`, and an `alg.levels` block deep-equal to §2.4. Anything
-     else is `UNSUPPORTED`; the verifier does not guess an older construction.
-   * **Match.** The message's `anchorId` must equal the anchor bundle's, and
-     its `aggregateRoot` must equal the value computed in step 4.
+   * **Format** (O8, closed). Require `schemaVersion = "rubric-anchor/2"`,
+     `treeVersion = 3`, and an `alg` object deep-equal (same keys, same values,
+     nothing extra) to the §2.4 block. An `alg` object with no `levels` key
+     is a flat block and is `UNSUPPORTED` (`ALG_LEGACY_FLAT`), whatever its
+     other keys (with or without `merkleOdd`); any other `alg`, schema or tree version
+     is `UNSUPPORTED` (`ALG_UNSUPPORTED`); the verifier does not guess an
+     older construction. Pre-August-2026 anchors therefore do not verify in v1.
+   * **Match.** The message's `anchorId` must equal the anchor bundle's
+     `attestationId`, and its `aggregateRoot` must equal the value computed in
+     step 4. Its `tier1Count` and `totalItems` must equal the bundle's flush
+     count and `itemCount` sum (consistency only, `FAIL` on a mismatch).
    * **Report.** Return `consensus_timestamp`, `sequence_number` and
      `payer_account_id` from the mirror.
 
@@ -726,15 +933,165 @@ aggregateRoot, sequenceNumber, consensusTimestamp, payerAccountId, topic,
 mirror}, anchorPayers: {source: "keys-file" | "built-in", accounts, attested?: false, warnings} }` (`attested: false` only when `source` is `keys-file`). The report always includes the topic ID. If `--topic` is not
 `0.0.10416909`, the verdict detail says so in every output mode.
 
+**Non-default `--mirror`.** If `--mirror` is not
+`https://mainnet-public.mirrornode.hedera.com`, the verdict detail carries a
+`NOTE` saying so in every output mode (text and `--json`), as for a
+non-default topic, and the note is also in `warnings`. The anchor's payer and
+consensus time then come from a mirror the user chose. That alone does not
+stop a `PASS`, because every anchored value is still recomputed and compared,
+but a retired key accepted only on that mirror's consensus time is
+`UNSUPPORTED` (`KEY_RETIRED_UNTRUSTED_MIRROR`, exit 3; §4.3 step 1).
+
+*As built (P7):* the five step names are `signature`, `leaf`, `batch`,
+`aggregate` and `anchor`, always in that order. Each step also carries
+`reason` (a code such as `KEY_NOT_PUBLISHED`, or `null` on `PASS`). The
+report adds `verdictDetail`, `exitCode`, `recordKind` (`tiered` | `dar`),
+`warnings`, `anchor.searched` (the hinted sequence range and time window), and
+`anchor.genuineMessages`: the number of complete `RUBRIC_TIER2_ANCHOR`
+messages from a pinned payer whose `anchorId` is the bundle's
+`attestationId`, found in the searched ranges (more than 1 means retries,
+which must agree; 0 when none was found or step 5 did not get that far).
+When `UNSUPPORTED` and `UNAVAILABLE` both occur with no `FAIL`, the exit code
+is 3: `UNSUPPORTED` would not change on a retry. A step that could not run
+because a value it needs was not produced is `UNSUPPORTED` with reason
+`NOT_RUN` (`UNAVAILABLE` if the cause was a network failure), never `PASS`.
+
 ### 4.5 Signed message per bundle kind
 
-* **Tiered:** ML-DSA-65 over `utf8(JCS(envelope))` with the envelope from
-  §2.5, the signature hex-encoded and `publicKey` base64-encoded
-  (`tiered-aggregator.ts:372-394`). P7 step 1 confirms the exact bytes
-  `signCanonical` signs (any context string or prehash) and records them here.
-* **DAR, direct, threshold:** *to be filled in by P7 step 1*, with references
-  to the rubric-protocol signing code. Only `tiered` and `dar` are in scope for
-  P7.
+Filled in by P7 step 1 (crypto review, 2026-10-10). Line references are
+rubric-protocol `main` 54afb5a1.
+
+**The signer.** `RubricOracle.signCanonical(value)` (`src/verify/oracle.ts:177-192`)
+computes `ml_dsa65.sign(secretKey, utf8(JCS(value)))` with `@noble/post-quantum`
+0.3.0 (`package.json:25`). It is **pure ML-DSA-65** (FIPS 204, no HashML-DSA
+prehash) with an **empty context string** (the library signs
+`M' = 0x00 ‖ 0x00 ‖ msg`), and it is deterministic (no randomness is passed, so
+the same key and message give the same signature). The signature is 3309 bytes,
+stored as 6618 lowercase hex characters; the public key is 1952 bytes, stored
+as base64. JCS is `canonicalize()` (`src/verify/canonical.ts:33`). The same key
+signs several message types with no context string; the verifier relies on the
+exact envelope shape for domain separation, and no remote caller can obtain a
+signature over a caller-chosen tiered envelope (the legacy `attest()` path is
+only in `src/index.ts` and tests; cosign requires a `threshold-multisig` shape
+and an HMAC).
+
+**(a) Tiered warm record.** Signed bytes are `utf8(JCS(tier1.envelope))`. The
+envelope is built at `tiered-aggregator.ts:400-408` and signed at `:409`:
+
+```
+{"attestation_type":"tiered","batch_root":"<64 lc hex>","batch_size":<int>,"flush_id":"<uuid>","issued_at":"<ISO ms Z>","issuer_node_region":"<us|sg|jp|ca|eu>","rubric_version":"1.0"}
+```
+
+The signature hex is copied at `:419`, the `publicKey` base64 at `:420`. There
+is no `keyId`. The warm record (`:465-496`; the anchor pointer is filled by
+`aggregator/warm-backfill.ts:132-146`) is:
+
+```
+{ rubric_version, attestation_type: "tiered", attestation_id, publicKey, signature,
+  issuer_node_region, issued_at, payload_hash, payload,
+  merkle_proof: [hex], merkle_proof_directions: ["L"|"R"], batch_root, batch_size,
+  anchors: { hcs: { topic_id, tx_id: "", consensus_timestamp: "",
+                    sequence_number: null | <number>, anchor_id?: <uuid> }, base: {…} },
+  stub: { attestationId, tier1FlushId, flushId?, forestRoot, treeRoot, leafHash,
+          merkleProof, merkleProofDirections, batchRoot, batchSize, payloadHash,
+          issuedAt, issuerNodeRegion, leafMessage, signature, publicKey, zk*, … },
+  tier1: { envelope, signature, publicKey, batch_root, batch_size } }
+```
+
+Sources of truth: `tier1.envelope`, `tier1.signature`, `tier1.publicKey` for the
+signature; `stub.leafMessage` for the leaf; `merkle_proof` and
+`merkle_proof_directions` for the fold. Every other copy must agree (§4.3).
+
+**(b) DAR completed bundle.** Written by `Enricher.enrichOne`
+(`src/api/dar-emit.ts:957-982`):
+
+```
+{ attestationId, dar: {…core…}, merkleProof: { leaf: L, steps: [], root: L },
+  anchorRef: { network: "hedera-mainnet", topicId, sequenceNumber: <number>, root: L },
+  signature: { alg: "unknown", keyRef, signature, over, source, raw },
+  extensions: { rubricDar: { state: "complete", emittedAt, receivedAt?, completedAt,
+     tiered: { attestationId, agentId, data, payloadKey? }, supersededAttestationIds?, reattestedAt?,
+     bridge: { hop0: { fn, data, leafMessage, tier1LeafFn, tier1LeafHash },
+               hop1: { fn, path: [{ sibling, siblingDirection }], batchRoot },
+               hop2: { anchorId, flushId | null, aggregateRoot, tier1FlushRoots,
+                       algorithm, treeVersion, leafConstruction, seqNum, lateAnchor },
+               checks, auditor } } } }
+```
+
+There is no `anchors.hcs`, no batch envelope and no `publicKey`. `signature`
+is built by `toBatchSignature` (`:276-288`) from the first available of
+(`:949-953`):
+
+* `source: "tier2-federation"`, whenever the tier-2 bundle had a `federation`
+  block (`tiered-aggregator.ts:620-623`). `signature.raw` is that block:
+  `{required, obtained, available, margin, respondingRegions, silentRegions,
+  signedFields, signatures: [{region, publicKey (base64), signature (hex)}],
+  sigHash}`, and `signature.signature` is `JSON.stringify(raw)`. Each entry
+  signs `utf8(JCS(raw.signedFields))` (`src/api/threshold-endpoint.ts:178-190`
+  for this node, `:85-133` and `:569-594` for peers), where `signedFields` is
+
+  ```
+  {"aggregate_root":"<hex>","anchor_id":"<uuid>","anchored_at":"<bundle anchoredAt>",
+   "attestation_type":"threshold-multisig","operator_keylist_aggregate_hash":"<hex>",
+   "quorum":{"required":3,"signer_regions":[…],"total":5},"subject":"tier2-aggregate",
+   "tier1_count":<int>,"total_items":<int>}
+  ```
+
+  (shown in JCS key order). At most 3 signatures are kept (`:204-205`).
+* `source: "tier1-batch"`: `signature.signature` is the tier-1 batch
+  signature hex (`:988-997`). Signed bytes are `utf8(JCS(E))` with `E` rebuilt
+  as `{rubric_version: "1.0", attestation_type: "tiered", batch_root:
+  hop1.batchRoot, batch_size: flush.itemCount, flush_id: flush.flushId,
+  issuer_node_region: leafMessage.issuer_node_region, issued_at:
+  leafMessage.issued_at}`, which is the tiered envelope of (a). Unconfirmed on
+  a real bundle. `signature.raw` is **not** compared with
+  `signature.signature`: `raw` is whatever `stubSignature()` returned
+  (`dar-emit.ts:953`, `:989-996`), and that is the `/v1/proof` response's
+  `signature` when present (`:990`), whose shape is not fixed. When it is a
+  string, `toBatchSignature` sets `signature = raw` (`:278`); when it is an
+  object, `signature` is a picked field or `JSON.stringify(raw)` (`:279-286`).
+  So `raw` is not provably the hex, and only `signature.signature` is used.
+
+`signature.over` labels are misleading and are ignored.
+
+**Bridge hops** (`dar-emit.ts:228-230, 240-253, 256-273, 883-934`), checked in
+this order:
+
+1. The core is checked against `spec/dar-0.1.md` first (§4.3 step 2): `v`
+   other than `"DAR/0.1"` is `UNSUPPORTED` (`DAR_VERSION_UNSUPPORTED`, no leaf
+   is claimed); a field outside the §2 set, a missing required field, a hash
+   not `sha3-256:<64 lc hex>`, a `decisionHash` that is not the §2.1
+   recomputation, an unknown `leafType` or a wrong §2 type is `FAIL`
+   (`DAR_CORE_INVALID`). Then
+   `L = "sha3-256:" + hex(SHA3-256(utf8(JCS(dar))))`
+   (`packages/attest-decision/src/dar.ts:211`, `hash.ts:25`). `L` must equal
+   `merkleProof.leaf`, `merkleProof.root`, `anchorRef.root` and
+   `tiered.data.leafHash`; `merkleProof.steps` must be `[]`.
+2. `data = {schema: "rubric.dar-anchor.v1", v: dar.v, decisionId:
+   dar.decisionId, agentId: dar.agentId, leafHash: L}` (`:228-230`) must be
+   JCS-equal to `hop0.data` and to `tiered.data`.
+3. `hop0.leafMessage.attestation_id === bundle.attestationId ===
+   tiered.attestationId`; the leaf message has `attestation_type: "tiered"`
+   and `rubric_version: "1.0"`.
+4. Payload: `leafMessage.payload.payload_hash_unsalted` must equal
+   `hex(SHA-256(utf8(JCS(data))))` (`tier1-worker.ts:97`, `dar-emit.ts:256-260`).
+   `payload_commitment` is `UNSUPPORTED` (`PAYLOAD_COMMITMENT`) in v1; a
+   payload with neither field is `FAIL` (`MALFORMED`).
+5. `T = SHA-256(0x00 ‖ utf8(JCS(leafMessage)))` must equal `hop0.tier1LeafHash`.
+6. Fold `T` along `hop1.path` with the batch rule (`siblingDirection: "L"`
+   means the sibling is the left operand) to `hop1.batchRoot`.
+7. Exactly one `tier1Flushes[]` entry has `forestRoot === hop1.batchRoot`; its
+   `flushId` equals `hop2.flushId` when that is non-null;
+   `hop2.tier1FlushRoots` equals the bundle's roots in order; `hop2.anchorId`
+   equals `anchorBundle.attestationId`.
+8. Then steps 4 and 5 of §4.3. `anchorRef.sequenceNumber` and `hop2.seqNum` are
+   only hints.
+
+**Direct and threshold** bundles are out of scope for P7.
+
+The vectors in `packages/replay-verify/test/vectors/` were generated from
+`canonical.ts`, `merkle.ts` and `spec-merkle.ts` at 54afb5a1 and pin all of the
+above (their `README.md` says how).
 
 ---
 
@@ -858,13 +1215,13 @@ O1 and O2 go to the board subagent, since they change published formats.
 | # | Question | Blocks |
 |---|---|---|
 | O1 | Should records embed the batch → aggregate path and `anchorId`, so P7 can verify from one file? | P7 single-file mode only; P7 as specified works without it |
-| O2 | Should the keys file get an append-only key history and an on-chain hash of each key set (the `trust-anchor.json` model)? Without it, bundles signed before a rotation report `KEY_NOT_PUBLISHED`, and trust in the keys file reduces to TLS on rubric-protocol.com. | P7 verifying rotated keys |
+| O2 | Should the keys file get an append-only key history and an on-chain hash of each key set (the `trust-anchor.json` model)? Without it, bundles signed before a rotation report `KEY_NOT_PUBLISHED` (key no longer listed) or `KEY_RETIRED` (key listed as retired, with no anchor time before its `rotatedAt`), and trust in the keys file reduces to TLS on rubric-protocol.com. | P7 verifying rotated keys |
 | O3 | Do several regional aggregators publish to topic `0.0.10416909`? If yes, what is the chain key (the anchor message carries no region)? | P8 `CHAIN_FORK` as drift |
 | O4 | Should `publishTier2Anchor` move to `getRecord()` so the consensus timestamp is recorded at submit? (Today `/v1/verify` reports the wall-clock `anchorConfirmedAt` as `consensus_timestamp`, `server.ts:1332-1333`.) With it, the anchor job could write `hcsConsensusTs` in the anchor-link line itself. | nothing; without it, anchor-links get the consensus timestamp from the §3.4 backfill, and P8 reports `INDEX_PENDING` until then |
-| O5 | Should the retry drainer keep `prevFederationSigHash`/`prevAnchorId` (`aggregator/index.ts:370-383`)? Today a retry creates a `SEGMENT_START`. | nothing; reduces P8 noise |
+| O5 | Should the retry drainer keep `prevFederationSigHash`/`prevAnchorId` (`aggregator/index.ts:217-231`)? Today a retry creates a `SEGMENT_START`. | nothing; reduces P8 noise |
 | O6 | **Closed, see D4.** The topic has `submit_key: null` and `admin_key: null` (immutable, no key ever). Origin is a pinned payer list, currently `0.0.3923341`, published as `anchorPayers` in the keys file, with a built-in list in the verifier that stays the trust root. Board review of the published field (P7a, 2026-10-10): approve the PR, hold the deploy until the §4.3 step 5 precedence rule is merged. | — |
 | O7 | `reconcile-rt.py` rewrites the `rt` field of earlier jsonl lines and `os.replace`s the file (§3.1). So attestation lines are not append-only, which D5 records; only anchor-link lines are. Also, a line appended between its tail read and its replace is lost, because the writers don't take its lock. Should `rt` move out of the jsonl (for example, a sidecar keyed by `id`), or should the writers share its lock? P6 only makes it pass link lines through untouched. A lost link line is re-appended by the §3.4 backfill on its next run, and P8 reports `MISSING_FROM_INDEX` until then. | nothing in P6 as written; closes the lost-append window |
-| O8 | The mirror's `alg` blocks are not the §2.4 block (§2.4, last bullet): older `rubric-anchor/2` messages have a flat block with `merkleOdd: "duplicate"`, and current ones add descriptive keys to each level. What does P7 accept: the three level specs compared on `{hash, domainSeparation, merkleOdd}` only, and the flat block as a separate, implemented construction or `UNSUPPORTED`? | §4.3 step 5 format check |
+| O8 | **Closed (P7 step 1, crypto review, 2026-10-10).** v1 accepts `schemaVersion: "rubric-anchor/2"`, `treeVersion: 3` and an `alg` block deep-equal to exactly the block rubric-protocol `main` emits (§2.4, `attestation-publisher.ts:397-414`). The flat block is `UNSUPPORTED` (`ALG_LEGACY_FLAT`); any other shape, including the unconfirmed descriptive-keys variant, is `UNSUPPORTED` (`ALG_UNSUPPORTED`). A variant is added only with a real mainnet fixture that recomputes. V1/V2 trees are never implemented. | — |
 
 ---
 

@@ -63,7 +63,7 @@ Read CLAUDE.md. The spec is `docs/specs/attestation-index-and-replay.md` (§2.4�
 - [ ] The verifier never requests `/api/v1/topics/<topic>` (topic info); the network guard rejects it.
 - [ ] Two genuine messages with the same `anchorId` and the same `aggregateRoot` (retry) give `PASS`, and the earliest `consensus_timestamp` is reported.
 - [ ] A chunked anchor message (≥1024 bytes) with chunks returned out of order reassembles and verifies.
-- [ ] Without a stored sequence number, the anchor is found by the `anchoredAt ± 15 min` search across at least two `links.next` pages (recorded fixture).
+- [ ] Without a stored sequence number, the anchor is found by the time-window search (15 min before / 60 min after the anchor bundle's `anchoredAt`; the window is centred on the bundle's `anchoredAt` because the message's own `anchoredAt` is publish time) across at least two `links.next` pages (recorded fixture).
 - [ ] The report always lists all five steps, and a step that did not run is never shown as `PASS`.
 - [ ] The README states the trust model plainly: the keys come from rubric-protocol.com over TLS (or are pinned with `--keys`, which is only independent if the file came over another channel), and a key the keys file does not list, or a retired key used after its `rotatedAt`, is unsupported until spec §6 O2 is decided. It also states that topic 0.0.10416909 accepts messages from anyone, so an anchor is genuine only because its payer is in the built-in list (or in `anchorPayers` of a file pinned with `--keys`).
 - [ ] safety-reviewer PASS recorded.

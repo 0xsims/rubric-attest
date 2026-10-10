@@ -1,0 +1,38 @@
+{
+  "name": "@tenprint/verify",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Standalone verifier for TenPrint (formerly Rubric Protocol) tiered and DAR attestations: ML-DSA-65 signature, Merkle fold, and the HCS anchor on a public mirror node. Makes no calls to the TenPrint API.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xsims/rubric-attest.git",
+    "directory": "packages/replay-verify"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "tenprint-verify": "./dist/bin.js"
+  },
+  "files": ["dist", "src"],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": { "access": "public" },
+  "scripts": {
+    "prepublishOnly": "npm run build",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@noble/post-quantum": "0.3.0"
+  }
+}
