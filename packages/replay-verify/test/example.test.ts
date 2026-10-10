@@ -1,7 +1,7 @@
 /**
  * --example: the bundled canary case, end to end through the CLI, under the §4.2 network guard.
- * The recorded mirror message is served through the injected fetch; the keys URL fails, so a
- * request to rubric-protocol.com (or anywhere but the mirror) cannot go unnoticed.
+ * The recorded mirror message is served through the injected fetch; the keys URLs fail, so a
+ * request to a TenPrint host (or anywhere but the mirror) cannot go unnoticed.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
@@ -31,7 +31,7 @@ describe("tenprint-verify --example", () => {
     expect(t.err.join("")).toContain("02d03bdf-e810-4dfd-a3a0-926b5ad48684");
   });
 
-  it("makes zero requests to the TenPrint API or rubric-protocol.com: mirror topic messages only", async () => {
+  it("makes zero requests to TenPrint (tenprint.ai or rubric-protocol.com): mirror topic messages only", async () => {
     const t = run(["--example"]);
     expect(await t.code).toBe(0);
     expect(t.net.requests.length).toBeGreaterThan(0);

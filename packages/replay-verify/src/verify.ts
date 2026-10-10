@@ -14,7 +14,7 @@ import {
   DEFAULT_MIRROR,
   DEFAULT_TOPIC,
   FEDERATION_MIN_SIGNERS,
-  KEYS_URL,
+  KEYS_URLS,
   SEQ_HINT_SPAN,
   WINDOW_AFTER_MS,
   WINDOW_BEFORE_MS,
@@ -93,7 +93,7 @@ export interface VerifyOptions {
   record: unknown;
   /** Parsed --anchor-bundle JSON. */
   anchorBundle: unknown;
-  /** Parsed --keys JSON. When given, rubric-protocol.com is never contacted. */
+  /** Parsed --keys JSON. When given, no TenPrint host is contacted. */
   keys?: unknown;
   mirror?: string;
   topic?: string;
@@ -325,22 +325,26 @@ export async function verify(opts: VerifyOptions): Promise<Report> {
   const rec = input.record;
   const warnings: string[] = [];
 
-  // ---- keys (fetched unless --keys) ----
+  // ---- keys (fetched unless --keys; each URL in order until one yields a usable file) ----
   let keys: KeysFile | null = pinnedKeys;
   let keysProblem: string | null = null;
   if (!pinned) {
-    let r;
-    try {
-      r = await getJson(gf, KEYS_URL, sleep);
-    } catch (e) {
-      if (!(e instanceof NetworkGuardError)) throw e;
-      r = { ok: false as const, reason: "NETWORK_GUARD", detail: e.message };
-    }
-    if (!r.ok) keysProblem = `keys file unavailable: ${r.detail}`;
-    else {
+    const problems: string[] = [];
+    for (const url of KEYS_URLS) {
+      let r;
+      try {
+        r = await getJson(gf, url, sleep);
+      } catch (e) {
+        if (!(e instanceof NetworkGuardError)) throw e;
+        r = { ok: false as const, reason: "NETWORK_GUARD", detail: e.message };
+      }
+      if (!r.ok) { problems.push(`keys file unavailable: ${r.detail}`); continue; }
       keys = parseKeysFile(r.json);
-      if (!keys) keysProblem = "fetched keys file has no signers array";
+      if (!keys) { problems.push(`fetched keys file from ${url} has no signers array`); continue; }
+      if (problems.length > 0) warnings.push(`keys file fetched from fallback ${url} (${problems.join("; ")})`);
+      break;
     }
+    if (!keys) keysProblem = problems.join("; ");
   }
   if (keys && keys.ignoredSigners > 0) warnings.push(`${keys.ignoredSigners} keys-file signer(s) ignored (not ML-DSA-65, bad publicKey, or unknown status)`);
   const payers: EffectivePayers = effectivePayers(pinned ? "pinned" : keys ? "fetched" : "unavailable", keys);
@@ -836,7 +840,7 @@ export async function verify(opts: VerifyOptions): Promise<Report> {
   const notPass = steps.filter((s) => s.status !== "PASS").map((s) => `${s.name}: ${s.status} (${s.reason})`);
   let verdictDetail = notPass.length === 0 ? "all five steps PASS" : notPass.join("; ");
   if (topic !== DEFAULT_TOPIC) {
-    const note = `topic ${topic} is not the Rubric anchor topic ${DEFAULT_TOPIC}`;
+    const note = `topic ${topic} is not the TenPrint anchor topic ${DEFAULT_TOPIC}`;
     verdictDetail += `; NOTE: ${note}`;
     warnings.push(note);
   }

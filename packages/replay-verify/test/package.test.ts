@@ -19,9 +19,9 @@ describe("package.json", () => {
     expect(pkg.dependencies).toEqual({ "@noble/post-quantum": "0.3.0" });
   });
 
-  it("is @tenprint/verify 0.2.0 with the tenprint-verify bin", () => {
+  it("is @tenprint/verify 0.3.0 with the tenprint-verify bin", () => {
     expect(pkg.name).toBe("@tenprint/verify");
-    expect(pkg.version).toBe("0.2.0");
+    expect(pkg.version).toBe("0.3.0");
     expect(pkg.license).toBe("Apache-2.0");
     expect(pkg.bin).toEqual({ "tenprint-verify": "dist/bin.js" });
   });

@@ -18,7 +18,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { KEYS_URL } from "../src/constants.js";
+import { KEYS_FALLBACK_URL, KEYS_URL } from "../src/constants.js";
 import { verify } from "../src/verify.js";
 import { fakeNet, noSleep, MIRROR, TOPIC, type Json } from "./helpers.js";
 
@@ -46,11 +46,19 @@ describe.skipIf(cases.length === 0)("real mainnet fixtures (test/fixtures/mainne
       }
     });
 
-    it(`${c}: with --keys, verifies with exit 0 and makes zero requests to rubric-protocol.com`, async () => {
+    it(`${c}: with --keys, verifies with exit 0 and makes zero requests to TenPrint hosts`, async () => {
       const net = fakeNet({ messages: read(c, "mirror-messages.json"), keys: null });
       const report = await verify({ record: read(c, "record.json"), anchorBundle: read(c, "anchor-bundle.json"), keys: read(c, "rubric-keys.json"), fetch: net.fetch, sleep: noSleep });
       expect(report.exitCode).toBe(0);
-      expect(net.requests.filter((u) => new URL(u).hostname.endsWith("rubric-protocol.com"))).toEqual([]);
+      expect(net.requests.filter((u) => /(^|\.)(tenprint\.ai|rubric-protocol\.com)$/.test(new URL(u).hostname))).toEqual([]);
+    });
+
+    it(`${c}: verifies with exit 0 from the rubric-protocol.com fallback when tenprint.ai is unreachable`, async () => {
+      const net = fakeNet({ messages: read(c, "mirror-messages.json"), keys: read(c, "rubric-keys.json"), keysPerUrl: { [KEYS_URL]: null } });
+      const report = await verify({ record: read(c, "record.json"), anchorBundle: read(c, "anchor-bundle.json"), fetch: net.fetch, sleep: noSleep });
+      expect(report.steps.map((s) => [s.name, s.status, s.reason])).toEqual(ALL_PASS);
+      expect(report.exitCode).toBe(0);
+      expect(net.requests).toContain(KEYS_FALLBACK_URL);
     });
   }
 

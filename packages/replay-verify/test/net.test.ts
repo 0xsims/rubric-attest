@@ -1,6 +1,6 @@
 /** The §4.2 allowlist, enforced by the one fetch wrapper. */
 import { describe, expect, it, vi } from "vitest";
-import { KEYS_URL, DEFAULT_MIRROR, DEFAULT_TOPIC } from "../src/constants.js";
+import { KEYS_FALLBACK_URL, KEYS_URL, DEFAULT_MIRROR, DEFAULT_TOPIC } from "../src/constants.js";
 import { NetworkGuardError, UsageError, checkAllowed, createGuardedFetch, getJson, validateMirror } from "../src/net.js";
 import { keysFile } from "./helpers.js";
 
@@ -13,6 +13,7 @@ const verifyUrl = keysFile().attestation.verify as string;
 describe("checkAllowed", () => {
   const allowed = [
     KEYS_URL,
+    KEYS_FALLBACK_URL,
     `${MIRROR}/api/v1/topics/${TOPIC}/messages?timestamp=gte:1.000000000&timestamp=lte:2.000000000&order=asc&limit=100`,
     `${MIRROR}/api/v1/topics/${TOPIC}/messages?sequencenumber=gte:1&sequencenumber=lte:39&order=asc&limit=100`,
     `${MIRROR}/api/v1/topics/${TOPIC}/messages?limit=100&order=asc&timestamp=lte:2.0&timestamp=gt:1.5`,
@@ -24,7 +25,13 @@ describe("checkAllowed", () => {
     ["the keys file's attestation.verify URL", verifyUrl],
     ["any rubric-protocol.com /v1 path", "https://rubric-protocol.com/v1/tiered-attest"],
     ["a regional rubric-protocol.com host", "https://us.rubric-protocol.com/.well-known/rubric-keys.json"],
+    ["tenprint.ai /v1/*", "https://tenprint.ai/v1/verify/abc"],
+    ["another tenprint.ai path", "https://tenprint.ai/.well-known/x402.json"],
+    ["a tenprint.ai subdomain", "https://www.tenprint.ai/.well-known/rubric-keys.json"],
     ["the keys URL with a query", `${KEYS_URL}?x=1`],
+    ["the fallback keys URL with a query", `${KEYS_FALLBACK_URL}?x=1`],
+    ["the keys file over http", "http://tenprint.ai/.well-known/rubric-keys.json"],
+    ["the keys file on a trailing-dot host", "https://tenprint.ai./.well-known/rubric-keys.json"],
     ["mainnet.mirrornode.hedera.com", `https://mainnet.mirrornode.hedera.com/api/v1/topics/${TOPIC}/messages?limit=1`],
     ["the topic-info endpoint /api/v1/topics/<topic>", `${MIRROR}/api/v1/topics/${TOPIC}`],
     ["a by-sequence lookup /messages/<seq>", `${MIRROR}/api/v1/topics/${TOPIC}/messages/123`],
@@ -38,8 +45,14 @@ describe("checkAllowed", () => {
     it(`refuses ${label}`, () => expect(() => checkAllowed(u, fetched)).toThrow(NetworkGuardError));
   }
 
-  it("with --keys, even the keys URL is refused (zero requests to rubric-protocol.com)", () => {
+  it("with --keys, even the keys URLs are refused (zero requests to TenPrint hosts)", () => {
     expect(() => checkAllowed(KEYS_URL, pinned)).toThrow(NetworkGuardError);
+    expect(() => checkAllowed(KEYS_FALLBACK_URL, pinned)).toThrow(NetworkGuardError);
+  });
+
+  it("the default keys URL is on tenprint.ai, the fallback on rubric-protocol.com, same legacy filename", () => {
+    expect(KEYS_URL).toBe("https://tenprint.ai/.well-known/rubric-keys.json");
+    expect(KEYS_FALLBACK_URL).toBe("https://rubric-protocol.com/.well-known/rubric-keys.json");
   });
 });
 
@@ -66,7 +79,7 @@ describe("createGuardedFetch", () => {
 
 describe("validateMirror", () => {
   it("accepts the public mirror", () => expect(validateMirror(MIRROR)).toBe(MIRROR));
-  for (const bad of ["https://mainnet.mirrornode.hedera.com", "https://rubric-protocol.com", "https://api.rubric-protocol.com", "http://mainnet-public.mirrornode.hedera.com", "https://x.example/prefix", "not a url"]) {
+  for (const bad of ["https://mainnet.mirrornode.hedera.com", "https://rubric-protocol.com", "https://api.rubric-protocol.com", "https://tenprint.ai", "https://api.tenprint.ai", "https://tenprint.ai.", "https://rubric-protocol.com.", "http://mainnet-public.mirrornode.hedera.com", "https://x.example/prefix", "not a url"]) {
     it(`refuses ${bad}`, () => expect(() => validateMirror(bad)).toThrow(UsageError));
   }
 });

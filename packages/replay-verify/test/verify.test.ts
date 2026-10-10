@@ -8,7 +8,7 @@ import { canonicalize } from "../src/jcs.js";
 import { verify, type Report } from "../src/verify.js";
 import { computeAggregateRoot, batchLeaf, buildBatchTree } from "../src/merkle.js";
 import { reassemble, parseMirrorMessage, type MirrorMessage } from "../src/mirror.js";
-import { KEYS_URL } from "../src/constants.js";
+import { KEYS_FALLBACK_URL, KEYS_URL } from "../src/constants.js";
 import {
   FOREIGN,
   MIRROR,
@@ -193,12 +193,12 @@ describe("positive cases", () => {
 
 // ===================================================================================
 describe("keys source and the anchor-payer list", () => {
-  it("--keys: zero requests to rubric-protocol.com; anchorPayers from the file, reported keys-file and unattested", async () => {
+  it("--keys: zero requests to TenPrint hosts; anchorPayers from the file, reported keys-file and unattested", async () => {
     const f = tieredFixture();
     const { report, requests } = await rv({ record: f.record, bundle: f.bundle, messages: f.messages, pinnedKeys: keysFile({ anchorPayers: [PINNED] }) });
     expectResult(report, 0);
     expect(requests.length).toBeGreaterThan(0);
-    expect(requests.filter((u) => new URL(u).hostname.endsWith("rubric-protocol.com"))).toEqual([]);
+    expect(requests.filter((u) => /(^|\.)(tenprint\.ai|rubric-protocol\.com)$/.test(new URL(u).hostname))).toEqual([]);
     expect(requests.every((u) => u.startsWith(`${MIRROR}/api/v1/topics/${TOPIC}/messages?`))).toBe(true);
     expect(report.anchorPayers).toEqual({ source: "keys-file", accounts: [PINNED], attested: false, warnings: [] });
   });
@@ -414,12 +414,42 @@ describe("negative vectors (none gives exit 0)", () => {
     expectResult(report, 4, "anchor", "UNAVAILABLE", "MIRROR_UNAVAILABLE");
   });
 
-  it("keys URL unreachable → UNAVAILABLE, exit 4", async () => {
+  it("both keys URLs unreachable → UNAVAILABLE, exit 4", async () => {
     const f = tieredFixture();
     const { report, requests } = await rv({ record: f.record, bundle: f.bundle, messages: f.messages, fetchedKeys: null });
     expectResult(report, 4, "signature", "UNAVAILABLE", "KEYS_UNAVAILABLE");
     expect(requests.filter((u) => u === KEYS_URL)).toHaveLength(6);
+    expect(requests.filter((u) => u === KEYS_FALLBACK_URL)).toHaveLength(6);
+    expect(step(report, "signature").detail).toContain(KEYS_URL);
+    expect(step(report, "signature").detail).toContain(KEYS_FALLBACK_URL);
     expect(step(report, "anchor").status).toBe("PASS");
+  });
+
+  it("tenprint.ai serves the keys file → rubric-protocol.com is never contacted, no fallback warning", async () => {
+    const f = tieredFixture();
+    const { report, requests } = await rv({ record: f.record, bundle: f.bundle, messages: f.messages });
+    expectResult(report, 0);
+    expect(requests.filter((u) => new URL(u).hostname.endsWith("rubric-protocol.com"))).toEqual([]);
+    expect(report.warnings.join(" ")).not.toContain("fallback");
+  });
+
+  for (const [label, primary] of [["unreachable", null], ["HTTP 404", 404], ["HTTP 503", 503], ["no signers array", { version: "1" }]] as const) {
+    it(`tenprint.ai ${label} → falls back to rubric-protocol.com, PASS with a warning`, async () => {
+      const f = tieredFixture();
+      const net = fakeNet({ messages: f.messages, keys: keysFile({ anchorPayers: [PINNED] }), keysPerUrl: { [KEYS_URL]: primary } });
+      const report = await verify({ record: f.record, anchorBundle: f.bundle, fetch: net.fetch, sleep: noSleep });
+      expectResult(report, 0);
+      expect(net.requests[0]).toBe(KEYS_URL);
+      expect(net.requests.filter((u) => u === KEYS_FALLBACK_URL)).toHaveLength(1);
+      expect(report.warnings.join(" ")).toContain(`keys file fetched from fallback ${KEYS_FALLBACK_URL}`);
+    });
+  }
+
+  it("fallback rubric-protocol.com also unusable → UNAVAILABLE, exit 4", async () => {
+    const f = tieredFixture();
+    const net = fakeNet({ messages: f.messages, keysPerUrl: { [KEYS_URL]: 404, [KEYS_FALLBACK_URL]: { version: "1" } } });
+    const report = await verify({ record: f.record, anchorBundle: f.bundle, fetch: net.fetch, sleep: noSleep });
+    expectResult(report, 4, "signature", "UNAVAILABLE", "KEYS_UNAVAILABLE");
   });
 
   it("keys URL 5xx → UNAVAILABLE, exit 4", async () => {

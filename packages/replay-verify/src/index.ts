@@ -1,7 +1,8 @@
 /**
  * @tenprint/verify — standalone replay verifier (spec
  * docs/specs/attestation-index-and-replay.md §4). Makes no calls to the TenPrint
- * API: only the static keys file (skipped with --keys) and a public mirror node.
+ * API: only the static keys file (tenprint.ai, falling back to
+ * rubric-protocol.com; skipped with --keys) and a public mirror node.
  */
 export {
   verify,
@@ -18,6 +19,8 @@ export {
   DEFAULT_MIRROR,
   DEFAULT_TOPIC,
   KEYS_URL,
+  KEYS_FALLBACK_URL,
+  KEYS_URLS,
   ALG_V3,
 } from "./constants.js";
 export {

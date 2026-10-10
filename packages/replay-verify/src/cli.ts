@@ -34,7 +34,7 @@ export const EXAMPLE_FILES = {
 const EXAMPLE_NOTE =
   "tenprint-verify --example: bundled canary record 02d03bdf-e810-4dfd-a3a0-926b5ad48684 " +
   "(payload is a commitment hash only), anchor bundle d59658dd-e087-4363-922c-becb76e51494, " +
-  "bundled keys file pinned; checking live against the public mirror, zero requests to rubric-protocol.com\n";
+  "bundled keys file pinned; checking live against the public mirror, zero requests to TenPrint\n";
 
 export interface CliIo {
   stdout: (s: string) => void;
