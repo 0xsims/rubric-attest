@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { ml_dsa65 } from "@noble/post-quantum/ml-dsa";
 import { canonicalize } from "../src/jcs.js";
-import { KEYS_URL } from "../src/constants.js";
+import { KEYS_URLS } from "../src/constants.js";
 import type { FetchLike } from "../src/net.js";
 
 export const VEC_DIR = new URL("./vectors/", import.meta.url);
@@ -123,11 +123,13 @@ export interface FakeNet {
 
 export interface FakeNetOpts {
   messages: MirrorMsg[];
-  keys?: Json | null; // null => keys URL fails (network error)
+  keys?: Json | null; // null => both keys URLs fail (network error)
   pageSize?: number;
   /** Respond with this status for mirror requests (all attempts). */
   mirrorStatus?: number;
   keysStatus?: number;
+  /** Per keys URL, overrides keys/keysStatus: null => network error, a number => that HTTP status, else the JSON body. */
+  keysPerUrl?: Record<string, Json | null | number>;
   /** Override links.next with this value on the first page. */
   nextOverride?: string;
 }
@@ -158,7 +160,13 @@ export function fakeNet(o: FakeNetOpts): FakeNet {
   const fetch: FetchLike = async (url) => {
     requests.push(url);
     const u = new URL(url);
-    if (url === KEYS_URL) {
+    if (KEYS_URLS.includes(url)) {
+      if (o.keysPerUrl && url in o.keysPerUrl) {
+        const v = o.keysPerUrl[url];
+        if (v === null) throw new TypeError("fetch failed (simulated)");
+        if (typeof v === "number") return new Response("err", { status: v });
+        return Response.json(v);
+      }
       if (o.keys === null) throw new TypeError("fetch failed (simulated)");
       if (o.keysStatus) return new Response("err", { status: o.keysStatus });
       return Response.json(o.keys);

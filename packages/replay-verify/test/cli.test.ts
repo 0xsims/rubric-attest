@@ -72,8 +72,8 @@ describe("tenprint-verify CLI", () => {
     expect(await main(["--record", "rec.json", "--anchor-bundle", "anchor.json", "--keys", "keys.json"], io(files).io)).toBe(2);
   });
 
-  it("exit 2 for --mirror mainnet.mirrornode.hedera.com or a rubric-protocol.com host", async () => {
-    for (const m of ["https://mainnet.mirrornode.hedera.com", "https://rubric-protocol.com"]) {
+  it("exit 2 for --mirror mainnet.mirrornode.hedera.com or a TenPrint host", async () => {
+    for (const m of ["https://mainnet.mirrornode.hedera.com", "https://tenprint.ai", "https://rubric-protocol.com"]) {
       const t = io(goodFiles());
       expect(await main(["--record", "rec.json", "--anchor-bundle", "anchor.json", "--mirror", m], t.io)).toBe(2);
       expect(t.net.requests).toEqual([]);
@@ -96,7 +96,7 @@ describe("tenprint-verify CLI", () => {
     for (const k of ["anchorId", "aggregateRoot", "sequenceNumber", "consensusTimestamp", "payerAccountId", "topic", "mirror"]) expect(r.anchor).toHaveProperty(k);
     expect(r.anchor.topic).toBe("0.0.10416909");
     expect(r.anchorPayers).toEqual({ source: "keys-file", accounts: [PINNED], attested: false, warnings: [] });
-    expect(t.net.requests.some((u) => u.includes("rubric-protocol.com"))).toBe(false);
+    expect(t.net.requests.some((u) => u.includes("tenprint.ai") || u.includes("rubric-protocol.com"))).toBe(false);
   });
 
   it("text output lists all five steps, the topic and the payer source", async () => {
@@ -118,7 +118,7 @@ describe("tenprint-verify CLI", () => {
       const code = await main(json ? [...args, "--json"] : args, t.io);
       expect(code).toBe(3);
       const out = t.out.join("");
-      expect(out).toContain("topic 0.0.5 is not the Rubric anchor topic 0.0.10416909");
+      expect(out).toContain("topic 0.0.5 is not the TenPrint anchor topic 0.0.10416909");
       if (json) expect(JSON.parse(out).anchor.topic).toBe("0.0.5");
     }
   });

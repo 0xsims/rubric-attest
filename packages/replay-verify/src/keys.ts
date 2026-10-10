@@ -100,7 +100,7 @@ export function effectivePayers(mode: "pinned" | "fetched" | "unavailable", keys
     if (!same) {
       warnings.push(
         `--keys anchorPayers ${JSON.stringify(f.list)} differs from the built-in list ${JSON.stringify(builtIn)}; ` +
-          "a --keys file is an independent trust root only if it came over a channel other than the rubric-protocol.com host",
+          "a --keys file is an independent trust root only if it came over a channel other than the TenPrint hosts",
       );
     }
     if (f.list.length === 0) warnings.push("--keys anchorPayers is empty: no anchor message can be genuine");

@@ -1,7 +1,8 @@
 /**
  * The one network path (spec §4.2). Every request goes through the guarded
  * fetch, which allows exactly:
- *   1. GET https://rubric-protocol.com/.well-known/rubric-keys.json  (not with --keys)
+ *   1. GET https://tenprint.ai/.well-known/rubric-keys.json, then on failure
+ *      GET https://rubric-protocol.com/.well-known/rubric-keys.json  (not with --keys)
  *   2. GET <mirror>/api/v1/topics/<topic>/messages?<query>          (incl. links.next)
  * and throws NetworkGuardError for anything else: /v1/*, the keys file's
  * attestation.verify URL, /api/v1/topics/<topic> (topic info), /messages/<seq>,
@@ -9,8 +10,9 @@
  */
 import {
   FORBIDDEN_MIRROR_HOSTS,
-  KEYS_URL,
+  KEYS_URLS,
   MAX_RETRIES,
+  OPERATOR_DOMAINS,
   REQUEST_TIMEOUT_MS,
   RETRY_BASE_MS,
 } from "./constants.js";
@@ -31,8 +33,9 @@ export class UsageError extends Error {
   }
 }
 
-function isRubricHost(host: string): boolean {
-  return host === "rubric-protocol.com" || host.endsWith(".rubric-protocol.com");
+function isOperatorHost(host: string): boolean {
+  const h = host.replace(/\.+$/, ""); // "tenprint.ai." is the same host
+  return OPERATOR_DOMAINS.some((d) => h === d || h.endsWith(`.${d}`));
 }
 
 /** Validate a --mirror base URL; returns its origin. Throws UsageError. */
@@ -46,7 +49,7 @@ export function validateMirror(base: string): string {
   }
   const host = u.hostname.toLowerCase();
   if (FORBIDDEN_MIRROR_HOSTS.includes(host)) throw new UsageError(`--mirror ${host} is not allowed (spec §4.2)`);
-  if (isRubricHost(host)) throw new UsageError("--mirror must not be a rubric-protocol.com host (zero calls to our API)");
+  if (isOperatorHost(host)) throw new UsageError("--mirror must not be a TenPrint host (tenprint.ai or rubric-protocol.com; zero calls to our API)");
   return u.origin;
 }
 
@@ -55,7 +58,7 @@ export interface GuardOptions {
   /** Mirror origin, already validated. */
   mirror: string;
   topic: string;
-  /** False when --keys is given: then no rubric-protocol.com request is allowed at all. */
+  /** False when --keys is given: then no request to a TenPrint host is allowed at all. */
   allowKeysUrl: boolean;
 }
 
@@ -70,9 +73,9 @@ export function checkAllowed(url: string, opts: Omit<GuardOptions, "fetch">): vo
   if (u.hash) throw new NetworkGuardError(url, "fragment in URL");
   const host = u.hostname.toLowerCase();
   if (FORBIDDEN_MIRROR_HOSTS.includes(host)) throw new NetworkGuardError(url, "forbidden mirror host");
-  if (isRubricHost(host)) {
-    if (!opts.allowKeysUrl) throw new NetworkGuardError(url, "--keys given: no request to rubric-protocol.com");
-    if (u.href !== KEYS_URL) throw new NetworkGuardError(url, "only the static keys file may be fetched from rubric-protocol.com");
+  if (isOperatorHost(host)) {
+    if (!opts.allowKeysUrl) throw new NetworkGuardError(url, "--keys given: no request to a TenPrint host");
+    if (!KEYS_URLS.includes(u.href)) throw new NetworkGuardError(url, "only the static keys file may be fetched from a TenPrint host");
     return;
   }
   if (u.origin !== opts.mirror) throw new NetworkGuardError(url, "host is not the configured mirror");

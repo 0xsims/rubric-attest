@@ -17,8 +17,18 @@ export const DEFAULT_TOPIC = "0.0.10416909";
 /** The public mirror. `mainnet.mirrornode.hedera.com` is never used (§4.2). */
 export const DEFAULT_MIRROR = "https://mainnet-public.mirrornode.hedera.com";
 
-/** The only rubric-protocol.com URL the verifier may fetch (§4.2 item 1). */
-export const KEYS_URL = "https://rubric-protocol.com/.well-known/rubric-keys.json";
+/**
+ * The keys file (§4.2 item 1). Fetched from tenprint.ai; rubric-protocol.com
+ * serves the identical file and is tried only if tenprint.ai yields no usable
+ * keys file. These two URLs are the only operator URLs the verifier may fetch.
+ * The `rubric-keys.json` filename is a legacy protocol identifier and stays.
+ */
+export const KEYS_URL = "https://tenprint.ai/.well-known/rubric-keys.json";
+export const KEYS_FALLBACK_URL = "https://rubric-protocol.com/.well-known/rubric-keys.json";
+export const KEYS_URLS: readonly string[] = Object.freeze([KEYS_URL, KEYS_FALLBACK_URL]);
+
+/** Operator domains: never a mirror, and only KEYS_URLS may be fetched from them. */
+export const OPERATOR_DOMAINS: readonly string[] = Object.freeze(["tenprint.ai", "rubric-protocol.com"]);
 
 /** Mirror hosts that are refused even when given explicitly (§4.2). */
 export const FORBIDDEN_MIRROR_HOSTS: readonly string[] = Object.freeze(["mainnet.mirrornode.hedera.com"]);

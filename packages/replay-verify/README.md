@@ -9,18 +9,24 @@ That verifies a real mainnet record bundled in the package (the
 canary) live against the public Hedera mirror, with zero calls to the TenPrint
 API.
 
-`tenprint-verify` checks a TenPrint (formerly Rubric Protocol) attestation from
-its files and a public Hedera mirror node. It makes **no calls to the TenPrint
-API**. It works with a tiered
-warm record or a completed DAR bundle, together with the tier-2 anchor bundle
-that covers it. Spec: `docs/specs/attestation-index-and-replay.md` §4.
+`tenprint-verify` checks a TenPrint attestation from its files and a public
+Hedera mirror node. It makes **no calls to the TenPrint API**. It works with a
+tiered warm record or a completed DAR bundle, together with the tier-2 anchor
+bundle that covers it. Spec: `docs/specs/attestation-index-and-replay.md` §4.
 
-> Status: 0.2.0, unreleased.
+> Status: 0.3.0, unreleased.
 
 **When to use which.** Use `tenprint-verify` when you want to check a record
 yourself, offline from our service, from the files plus the public ledger.
-`@rubric-protocol/decision-verify` is our paid API route, which answers the same
-question for a DAR `decisionId` from our index and store.
+TenPrint's paid API route (npm `@rubric-protocol/decision-verify`) answers the
+same question for a DAR `decisionId` from our index and store.
+
+**Legacy protocol identifiers.** TenPrint was formerly called Rubric Protocol.
+Names that appear in signed or anchored data keep the old name on purpose, and
+always will: `RUBRIC_TIER2_ANCHOR`, `rubric-anchor/2`, `rubric.dar-anchor.v1`,
+`rubric_version`, `extensions.rubricDar`, `rubric-keys/1` and the
+`rubric-keys.json` filename. Renaming them would change what was signed and
+anchored and break verification of every existing record.
 
 ## What it proves
 
@@ -68,12 +74,15 @@ If every step is `PASS` (exit 0), then:
 
 Read this before relying on a `PASS`.
 
-* **The keys come from rubric-protocol.com over TLS.** By default the verifier
-  fetches `https://rubric-protocol.com/.well-known/rubric-keys.json`, so trust
-  in the keys reduces to TLS and the rubric-protocol.com host. `--keys <file>`
-  pins a keys file and makes **zero** requests to rubric-protocol.com.
+* **The keys come from TenPrint over TLS.** By default the verifier fetches
+  `https://tenprint.ai/.well-known/rubric-keys.json`. If that yields no usable
+  keys file (unreachable, an HTTP error, not JSON, or no `signers` array), it
+  falls back to `https://rubric-protocol.com/.well-known/rubric-keys.json`,
+  which serves the identical file, and adds a warning to the report. So trust
+  in the keys reduces to TLS and those two TenPrint hosts. `--keys <file>`
+  pins a keys file and makes **zero** requests to either host.
   However, a pinned file is only an independent trust root if it came over
-  some channel other than that host.
+  some channel other than those hosts.
 * **Unlisted keys are unsupported.** If the keys file does not list the
   record's key for its region, the result is `UNSUPPORTED` (`KEY_NOT_PUBLISHED`).
   This happens after a rotation the file does not list, and also for a
@@ -104,9 +113,9 @@ Read this before relying on a `PASS`.
   default is called out with a `NOTE` in the verdict detail (text and
   `--json`), and a retired key that counts only because of that mirror's
   consensus time is `UNSUPPORTED` (`KEY_RETIRED_UNTRUSTED_MIRROR`).
-* **The anchor bundle comes from the Rubric Protocol store, and it is checked,
-  never trusted.** `<anchorId>.json` is written by the operator's Rubric
-  Protocol store, because batch roots are not on-chain. You supply it; the
+* **The anchor bundle comes from the TenPrint store, and it is checked,
+  never trusted.** `<anchorId>.json` is written by the operator's TenPrint
+  store, because batch roots are not on-chain. You supply it; the
   verifier never fetches it, and it does not trust it:
   * every root is recomputed;
   * the result must match the signed envelope and the on-chain `aggregateRoot`.
@@ -116,14 +125,17 @@ Read this before relying on a `PASS`.
 Exactly two kinds of request are allowed (spec §4.2), and one guarded `fetch`
 throws on anything else:
 
-1. `GET https://rubric-protocol.com/.well-known/rubric-keys.json`. This is
-   skipped with `--keys`.
+1. `GET https://tenprint.ai/.well-known/rubric-keys.json`, and only if that
+   fails, `GET https://rubric-protocol.com/.well-known/rubric-keys.json`.
+   Both are skipped with `--keys`.
 2. `GET <mirror>/api/v1/topics/<topic>/messages?…`, including `links.next`.
 
-It never calls `rubric-protocol.com/v1/*`, the keys file's `attestation.verify`
-URL, the topic-info endpoint, or `/messages/<seq>`. Redirects are refused. A
-429, 5xx or network error is retried with backoff, at most 5 times per page;
-after that the result is `UNAVAILABLE`.
+It never calls any other path on tenprint.ai or rubric-protocol.com (such as
+`/v1/*`), the keys file's `attestation.verify` URL, the topic-info endpoint,
+or `/messages/<seq>`. Redirects are refused. A 429, 5xx or network error is
+retried with backoff, at most 5 times per request URL; after that the keys
+fetch moves to the fallback URL, and the mirror result is `UNAVAILABLE`. If
+both keys URLs fail, the result is `UNAVAILABLE`.
 
 ## Usage
 
@@ -140,7 +152,7 @@ tenprint-verify --example [--mirror <base-url>] [--json]
 `--example` verifies the bundled canary case below. It reads `record.json`,
 `anchor-bundle.json` and `rubric-keys.json` from the package's
 `test/fixtures/mainnet/tiered/`, and pins that keys file as with `--keys`. So its
-only requests go to the mirror, and it makes none to rubric-protocol.com. It
+only requests go to the mirror, and it makes none to TenPrint. It
 cannot be combined with `--record`, `--anchor-bundle`, `--keys` or `--topic`.
 
 | Exit | Meaning |
@@ -194,9 +206,10 @@ node packages/replay-verify/dist/bin.js \
 ```
 
 It makes exactly two kinds of request: the keys file from
-`https://rubric-protocol.com/.well-known/rubric-keys.json`, and the topic
-messages from `https://mainnet-public.mirrornode.hedera.com`. To make zero
-requests to rubric-protocol.com, add
+`https://tenprint.ai/.well-known/rubric-keys.json` (or, if that fails, its
+`rubric-protocol.com` fallback), and the topic messages from
+`https://mainnet-public.mirrornode.hedera.com`. To make zero requests to
+TenPrint, add
 `--keys packages/replay-verify/test/fixtures/mainnet/tiered/rubric-keys.json`.
 That is a recorded copy of the keys file.
 
@@ -269,7 +282,7 @@ holding:
 |---|---|
 | `record.json` | **tiered:** the warm record `<attestationId>.json` from `warm/` (or `cold/`) under `/mnt/tempus-attestation-store` (spec §3.4); a JSON array with exactly one tiered record is also fine. **dar:** the completed bundle `decisions/<YYYY-MM-DD>/<decisionId>.json` from the bundles directory. |
 | `anchor-bundle.json` | The tier-2 anchor bundle `<anchorId>.json`. Look it up in the hot store (`bundles/`), then `warm/`, then `cold/`; `retention.py` moves it after 2 h and 7 days, and to S3 after 90 days. |
-| `rubric-keys.json` | `https://rubric-protocol.com/.well-known/rubric-keys.json` as served when you record (or rubric-web's `.well-known/rubric-keys.json`). |
+| `rubric-keys.json` | `https://tenprint.ai/.well-known/rubric-keys.json` as served when you record (or rubric-web's `.well-known/rubric-keys.json`). |
 | `mirror-messages.json` | The mirror messages for the anchor, recorded with the command below. |
 
 Record the mirror messages (this contacts only the public mirror):
