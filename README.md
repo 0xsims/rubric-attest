@@ -40,6 +40,18 @@ Free API key: https://rubric-protocol.com/get-started. Code example under [SDK u
 
 > Batch ingest is in limited rollout. Request access: Scott@Rubric-Protocol.com
 
+## Verify one yourself
+
+```bash
+npx @tenprint/verify --example
+```
+
+Checks a real TenPrint attestation bundled with the package against the public
+Hedera mirror: the ML-DSA-65 signature, the Merkle proofs up to the anchored
+root, and the HCS anchor. Zero requests to TenPrint servers. Package:
+[`@tenprint/verify`](https://www.npmjs.com/package/@tenprint/verify), source in
+[`packages/replay-verify`](./packages/replay-verify).
+
 ## Layout
 
 | Path | What |
@@ -51,6 +63,7 @@ Free API key: https://rubric-protocol.com/get-started. Code example under [SDK u
 | `packages/schema` | Adapter — JSON Schema / Zod → DAR inputs (P3). |
 | `packages/verify` | x402-gated `/v1/x402/decision-verify` route — Merkle proof, HCS anchor ref, signature, drift flag; chain-check continuity (P4). |
 | `packages/evidence` | `rubric-evidence export` CLI — offline evidence bundles (DARs, proofs, anchors, continuity, schema-change log) from index shards + store (P5). |
+| `packages/replay-verify` | [`@tenprint/verify`](https://www.npmjs.com/package/@tenprint/verify), `tenprint-verify` CLI — standalone replay verifier for a tiered record or DAR bundle: ML-DSA-65 signature, Merkle fold to `aggregateRoot`, HCS anchor on a public mirror; zero calls to the TenPrint API (P7). |
 | `.github/workflows/ci.yml` | Install + lint + typecheck + build + test, on every PR. |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Release history (Keep a Changelog). |
 
