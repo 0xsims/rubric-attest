@@ -8,7 +8,7 @@ Read CLAUDE.md. The spec is `docs/specs/attestation-index-and-replay.md` (§2.4�
    * Pick the ML-DSA-65 library.
    * Document the exact signed byte string for each bundle kind in spec §4.5, with rubric-protocol file:line references.
    * Confirm the §2.5 byte constructions (including `makeLeafV2` and the hex-string wrap) against the code.
-   * Anchor origin is closed (spec D4): the topic has no submit key and never can, so origin is the pinned payer list only. Read `anchorPayers` from the keys file, with the hardcoded fallback `["0.0.3923341"]` (§4.3 step 5). Publishing the field is `tasks/P7a-anchor-payers.md`; P7 does not wait for it.
+   * Anchor origin is closed (spec D4): the topic has no submit key and never can, so origin is the pinned payer list only. The verifier's built-in list `["0.0.3923341"]` is the trust root; a fetched `anchorPayers` never widens or shrinks it, and only an explicit `--keys` file replaces it (§4.3 step 5). Publishing the field is `tasks/P7a-anchor-payers.md`; P7 does not wait for it.
 
    Write no verifier code until §4.5 is filled in.
 2. Generate golden vectors from rubric-protocol's own code (`spec-merkle.ts`, `merkle.ts`, `canonical.ts`, the signer) and commit them under `packages/replay-verify/test/vectors/`:
@@ -48,18 +48,22 @@ Read CLAUDE.md. The spec is `docs/specs/attestation-index-and-replay.md` (§2.4�
   - [ ] a forged anchor message with a matching `anchorId` from a non-pinned payer: excluded. With no genuine message present, the result is `UNSUPPORTED` / `ANCHOR_ORIGIN_UNVERIFIED`, exit 3, never exit 0.
   - [ ] a chunk whose `payer_account_id` differs from the account in its `initial_transaction_id`: discarded before reassembly.
   - [ ] a genuine chunked message that is still missing a chunk after a forged chunk is dropped: does not count, exit 3, never exit 0.
-  - [ ] a keys file whose `anchorPayers` is `[]`: no genuine payer, exit 3, never exit 0, even though the fallback list would match.
-  - [ ] a keys file whose `anchorPayers` is `null`, `"0.0.3923341"`, `[3923341]` or `["0.0.3923341-abcde"]`: `UNSUPPORTED` / `ANCHOR_PAYERS_INVALID`, exit 3, never exit 0, with no fallback.
+  - [ ] a `--keys` file whose `anchorPayers` is `[]`: no genuine payer, exit 3, never exit 0, even though the built-in list would match.
+  - [ ] a keys file (`--keys` or fetched) whose `anchorPayers` is `null`, `"0.0.3923341"`, `[3923341]` or `["0.0.3923341-abcde"]`: `UNSUPPORTED` / `ANCHOR_PAYERS_INVALID`, exit 3, never exit 0, with no fallback.
+  - [ ] a fetched keys file whose `anchorPayers` adds a payer not in the built-in list, with a matching anchor message only from that payer: `UNSUPPORTED` / `ANCHOR_PAYER_UNPINNED`, exit 3, never exit 0.
+  - [ ] a record signed by a `status: "retired"` key whose anchor `consensus_timestamp` is after that signer's `rotatedAt`: `UNSUPPORTED` / `KEY_RETIRED`, exit 3, never exit 0.
+  - [ ] a keys file whose `anchorPayers` is `["0.0.3923341\n"]` or `["0.0.03923341"]`: `UNSUPPORTED` / `ANCHOR_PAYERS_INVALID`, exit 3.
+  - [ ] a fetched keys file whose `anchorPayers` omits a built-in payer: the built-in list is still used, the genuine anchor gives `PASS`, and the report carries a warning.
   - [ ] a keys file whose `anchorPayers` is `["0.0.39"]`: no prefix or substring match against payer `0.0.3923341`, exit 3, never exit 0.
   - [ ] two genuine messages with the same `anchorId` and conflicting `aggregateRoot`: `FAIL` / `DUPLICATE_ANCHOR_CONFLICT`, exit 1
 - [ ] A genuine single-part anchor message with no `chunk_info` from the pinned payer gives `PASS`.
 - [ ] A genuine chunked anchor message plus a forged chunk from a non-pinned payer that claims the same `initial_transaction_id` gives `PASS`: the forged chunk is discarded before reassembly.
 - [ ] A genuine message plus a forged message with the same `anchorId` and a different `aggregateRoot` from a non-pinned payer gives `PASS`: the forgery is ignored and cannot cause `DUPLICATE_ANCHOR_CONFLICT`.
-- [ ] Pinned list source: a keys file with `anchorPayers` uses that list and the report says `keys-file`; a keys file without the field uses the fallback and the report says `fallback`. A test asserts the fallback is exactly `["0.0.3923341"]`.
+- [ ] Pinned list source: a `--keys` file with `anchorPayers` uses that list and the report says `keys-file`; a fetched file, or any file without the field, uses the built-in list and the report says `built-in`. When the source is `keys-file`, the report marks the list as unattested. A test asserts the built-in list is exactly `["0.0.3923341"]`.
 - [ ] The verifier never requests `/api/v1/topics/<topic>` (topic info); the network guard rejects it.
 - [ ] Two genuine messages with the same `anchorId` and the same `aggregateRoot` (retry) give `PASS`, and the earliest `consensus_timestamp` is reported.
 - [ ] A chunked anchor message (≥1024 bytes) with chunks returned out of order reassembles and verifies.
 - [ ] Without a stored sequence number, the anchor is found by the `anchoredAt ± 15 min` search across at least two `links.next` pages (recorded fixture).
 - [ ] The report always lists all five steps, and a step that did not run is never shown as `PASS`.
-- [ ] The README states the trust model plainly: the keys come from rubric-protocol.com over TLS (or are pinned with `--keys`), and rotated keys are unsupported until spec §6 O2 is decided. It also states that topic 0.0.10416909 accepts messages from anyone, so an anchor is genuine only because its payer is in `anchorPayers` (or the fallback).
+- [ ] The README states the trust model plainly: the keys come from rubric-protocol.com over TLS (or are pinned with `--keys`, which is only independent if the file came over another channel), and a key the keys file does not list, or a retired key used after its `rotatedAt`, is unsupported until spec §6 O2 is decided. It also states that topic 0.0.10416909 accepts messages from anyone, so an anchor is genuine only because its payer is in the built-in list (or in `anchorPayers` of a file pinned with `--keys`).
 - [ ] safety-reviewer PASS recorded.
