@@ -20,7 +20,7 @@
     }
   },
   "bin": {
-    "tenprint-verify": "./dist/bin.js"
+    "tenprint-verify": "dist/bin.js"
   },
   "files": ["dist", "src"],
   "engines": {
