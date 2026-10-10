@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+import { main } from "./cli.js";
+
+main(process.argv.slice(2), {
+  stdout: (s) => process.stdout.write(s),
+  stderr: (s) => process.stderr.write(s),
+}).then(
+  (code) => {
+    process.exitCode = code;
+  },
+  (e: unknown) => {
+    process.stderr.write(`rubric-replay: internal error: ${e instanceof Error ? e.stack ?? e.message : String(e)}\n`);
+    process.exitCode = 2;
+  },
+);
