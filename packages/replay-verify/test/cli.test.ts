@@ -28,7 +28,7 @@ function goodFiles(): Record<string, string> {
   return { "rec.json": JSON.stringify(f.record), "anchor.json": JSON.stringify(f.bundle), "keys.json": JSON.stringify(keysFile({ anchorPayers: [PINNED] })) };
 }
 
-describe("rubric-replay CLI", () => {
+describe("tenprint-verify CLI", () => {
   it("exit 2 without --record/--anchor-bundle", async () => {
     const t = io({});
     expect(await main(["--record", "rec.json"], t.io)).toBe(2);

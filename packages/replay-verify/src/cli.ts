@@ -1,5 +1,5 @@
 /**
- * rubric-replay --record <warm-record.json | dar-bundle.json>
+ * tenprint-verify --record <warm-record.json | dar-bundle.json>
  *               --anchor-bundle <anchorId>.json
  *               [--keys <rubric-keys.json>] [--mirror <base-url>] [--topic 0.0.10416909] [--json]
  *
@@ -13,7 +13,7 @@ import { InputError } from "./record.js";
 import { verify } from "./verify.js";
 
 const USAGE =
-  "usage: rubric-replay --record <warm-record.json|dar-bundle.json> --anchor-bundle <anchorId>.json " +
+  "usage: tenprint-verify --record <warm-record.json|dar-bundle.json> --anchor-bundle <anchorId>.json " +
   "[--keys <rubric-keys.json>] [--mirror <base-url>] [--topic 0.0.10416909] [--json]\n";
 
 export interface CliIo {
@@ -86,7 +86,7 @@ export async function main(argv: string[], io: CliIo): Promise<number> {
     return report.exitCode;
   } catch (e) {
     if (e instanceof InputError || e instanceof UsageError) {
-      io.stderr(`rubric-replay: ${e.message}\n`);
+      io.stderr(`tenprint-verify: ${e.message}\n`);
       return 2;
     }
     throw e;

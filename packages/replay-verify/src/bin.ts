@@ -9,7 +9,7 @@ main(process.argv.slice(2), {
     process.exitCode = code;
   },
   (e: unknown) => {
-    process.stderr.write(`rubric-replay: internal error: ${e instanceof Error ? e.stack ?? e.message : String(e)}\n`);
+    process.stderr.write(`tenprint-verify: internal error: ${e instanceof Error ? e.stack ?? e.message : String(e)}\n`);
     process.exitCode = 2;
   },
 );

@@ -1,4 +1,4 @@
-# Golden vectors for `@rubric-protocol/replay-verify`
+# Golden vectors for `@tenprint/verify`
 
 These files were generated from **rubric-protocol's own code**, not from this
 package, and `test/vectors.test.ts` checks that this package reproduces every

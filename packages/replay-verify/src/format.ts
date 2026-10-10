@@ -3,7 +3,7 @@ import type { Report } from "./verify.js";
 /** Human-readable report. Always lists all five steps and the topic. */
 export function formatReport(r: Report): string {
   const lines: string[] = [];
-  lines.push(`rubric-replay: ${r.verdict} (exit ${r.exitCode}) — ${r.recordKind} record`);
+  lines.push(`tenprint-verify: ${r.verdict} (exit ${r.exitCode}) — ${r.recordKind} record`);
   lines.push(`  ${r.verdictDetail}`);
   lines.push("");
   for (const s of r.steps) {

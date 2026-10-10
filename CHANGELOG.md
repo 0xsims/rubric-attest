@@ -12,7 +12,7 @@ All notable changes to this project are documented here. The format is based on
 
 ### Added
 
-- **`@rubric-protocol/replay-verify` 0.1.0 (new, unreleased): `rubric-replay`**
+- **`@tenprint/verify` 0.1.0 (new, unreleased): `tenprint-verify`**
   (P7, `docs/specs/attestation-index-and-replay.md` §4). A standalone replay
   verifier for a tiered warm record or a completed DAR bundle plus its tier-2
   anchor bundle. It checks the ML-DSA-65 signature against the published keys
@@ -20,7 +20,7 @@ All notable changes to this project are documented here. The format is based on
   `RUBRIC_TIER2_ANCHOR` message from a pinned payer on a public mirror node. A
   DAR core is checked against `spec/dar-0.1.md` (field set, hash encoding,
   recomputed `decisionHash`, `leafType`, version) before its leaf is computed. It
-  makes no calls to the Rubric API. Its only dependency is
+  makes no calls to the TenPrint API. Its only dependency is
   `@noble/post-quantum` 0.3.0. It ships golden vectors generated from
   rubric-protocol's own code. Spec §4.5 (signed bytes) is filled in and O8 is closed.
   The end-to-end test runs on one real mainnet tiered canary record, anchored at

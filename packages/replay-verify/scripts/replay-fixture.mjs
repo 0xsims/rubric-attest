@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Run rubric-replay offline against a recorded case: the real CLI and the real
+// Run tenprint-verify offline against a recorded case: the real CLI and the real
 // §4.2 network guard, with the mirror and keys responses served from files.
 //
 //   npm run build

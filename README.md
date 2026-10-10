@@ -51,7 +51,7 @@ Free API key: https://rubric-protocol.com/get-started. Code example under [SDK u
 | `packages/schema` | Adapter — JSON Schema / Zod → DAR inputs (P3). |
 | `packages/verify` | x402-gated `/v1/x402/decision-verify` route — Merkle proof, HCS anchor ref, signature, drift flag; chain-check continuity (P4). |
 | `packages/evidence` | `rubric-evidence export` CLI — offline evidence bundles (DARs, proofs, anchors, continuity, schema-change log) from index shards + store (P5). |
-| `packages/replay-verify` | `rubric-replay` CLI — standalone replay verifier for a tiered record or DAR bundle: ML-DSA-65 signature, Merkle fold to `aggregateRoot`, HCS anchor on a public mirror; zero calls to the Rubric API (P7, unreleased). |
+| `packages/replay-verify` | `@tenprint/verify`, `tenprint-verify` CLI — standalone replay verifier for a tiered record or DAR bundle: ML-DSA-65 signature, Merkle fold to `aggregateRoot`, HCS anchor on a public mirror; zero calls to the TenPrint API (P7, unreleased). |
 | `.github/workflows/ci.yml` | Install + lint + typecheck + build + test, on every PR. |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Release history (Keep a Changelog). |
 

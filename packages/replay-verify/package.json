@@ -1,9 +1,9 @@
 {
-  "name": "@rubric-protocol/replay-verify",
+  "name": "@tenprint/verify",
   "version": "0.1.0",
   "private": false,
   "type": "module",
-  "description": "Standalone replay verifier for Rubric tiered and DAR attestations: ML-DSA-65 signature, Merkle fold, and the HCS anchor on a public mirror node. Makes no calls to the Rubric API.",
+  "description": "Standalone verifier for TenPrint (formerly Rubric Protocol) tiered and DAR attestations: ML-DSA-65 signature, Merkle fold, and the HCS anchor on a public mirror node. Makes no calls to the TenPrint API.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -20,7 +20,7 @@
     }
   },
   "bin": {
-    "rubric-replay": "./dist/bin.js"
+    "tenprint-verify": "./dist/bin.js"
   },
   "files": ["dist", "src"],
   "engines": {

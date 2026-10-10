@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Record the mirror messages rubric-replay would read for one anchor, so a real
+// Record the mirror messages tenprint-verify would read for one anchor, so a real
 // mainnet case can be replayed offline by test/mainnet.test.ts.
 //
 //   node packages/replay-verify/scripts/record-mirror-window.mjs \

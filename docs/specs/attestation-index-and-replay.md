@@ -2,7 +2,8 @@
 
 Status: **draft**. P6 is built (rubric-protocol anchor links and mirror
 backfill behind a default-off flag; attest-index 1.3.0 ingest). P7 is built
-as `packages/replay-verify` (unreleased; §4.5 and O8 settled by P7 step 1).
+as `packages/replay-verify`, package `@tenprint/verify` (unreleased; §4.5 and
+O8 settled by P7 step 1).
 The decision-verify step and P8 are design only. Covers phases P6, P7 and P8; task
 files are `tasks/P6-index.md`, `tasks/P7-replay.md`, `tasks/P7a-anchor-payers.md`,
 `tasks/P8-drift-check.md`.
@@ -565,8 +566,9 @@ anchor data. Its anchor columns come only from the jsonl.
 
 ### 4.1 Package and inputs
 
-New package `packages/replay-verify`, published as
-`@rubric-protocol/replay-verify`, with a `rubric-replay` bin. Its only runtime
+New package `packages/replay-verify`, published as `@tenprint/verify` (name
+decided by the operator, 2026-10-10; npm org `tenprint`), with a
+`tenprint-verify` bin. Its only runtime
 dependency is `@noble/post-quantum`, pinned to exactly `0.3.0`, the library and
 version the service signs with (`rubric-protocol/package.json:25`,
 `oracle.ts:177-192`; picked in P7 step 1 with crypto review). Verification
@@ -576,7 +578,7 @@ invalid signature. An upgrade is gated on a committed known-answer vector,
 because later versions may change the argument order. SHA-256 and SHA3-256
 come from `node:crypto`; JCS is a small in-package implementation with the
 semantics of `canonical.ts`.
-**It does not depend on any other `@rubric-protocol/*` package.** Verification
+**It does not depend on any `@rubric-protocol/*` or other `@tenprint/*` package.** Verification
 must not be able to pick up service code by accident.
 
 `--record` is either a **tiered warm record** (`<attestationId>.json` from the
@@ -586,12 +588,12 @@ exactly one element is a tiered record, `warm-backfill.ts:104-112`) or a
 or a file that is not JSON, exits 2.
 
 ```
-rubric-replay --record <warm-record.json | dar-bundle.json>
-              --anchor-bundle <anchorId>.json
-              [--keys <rubric-keys.json>]     # offline / pinned keys; skips the fetch
-              [--mirror <base-url>]           # default https://mainnet-public.mirrornode.hedera.com
-              [--topic 0.0.10416909]
-              [--json]
+tenprint-verify --record <warm-record.json | dar-bundle.json>
+                --anchor-bundle <anchorId>.json
+                [--keys <rubric-keys.json>]     # offline / pinned keys; skips the fetch
+                [--mirror <base-url>]           # default https://mainnet-public.mirrornode.hedera.com
+                [--topic 0.0.10416909]
+                [--json]
 ```
 
 The verifier needs **two input files**, because the batch → aggregate path is

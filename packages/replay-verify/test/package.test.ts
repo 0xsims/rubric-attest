@@ -7,11 +7,11 @@ const pkgDir = new URL("../", import.meta.url);
 const pkg = JSON.parse(readFileSync(new URL("package.json", pkgDir), "utf8"));
 
 describe("package.json", () => {
-  it("has no @rubric-protocol/* dependency of any kind", () => {
+  it("has no @rubric-protocol/* or other @tenprint/* dependency of any kind", () => {
     for (const field of ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies", "bundledDependencies", "bundleDependencies"]) {
       const deps = pkg[field] ?? {};
       const names = Array.isArray(deps) ? deps : Object.keys(deps);
-      expect(names.filter((n: string) => n.startsWith("@rubric-protocol/")), field).toEqual([]);
+      expect(names.filter((n: string) => n.startsWith("@rubric-protocol/") || n.startsWith("@tenprint/")), field).toEqual([]);
     }
   });
 
@@ -19,18 +19,18 @@ describe("package.json", () => {
     expect(pkg.dependencies).toEqual({ "@noble/post-quantum": "0.3.0" });
   });
 
-  it("is @rubric-protocol/replay-verify 0.1.0 with the rubric-replay bin", () => {
-    expect(pkg.name).toBe("@rubric-protocol/replay-verify");
+  it("is @tenprint/verify 0.1.0 with the tenprint-verify bin", () => {
+    expect(pkg.name).toBe("@tenprint/verify");
     expect(pkg.version).toBe("0.1.0");
     expect(pkg.license).toBe("Apache-2.0");
-    expect(pkg.bin).toEqual({ "rubric-replay": "./dist/bin.js" });
+    expect(pkg.bin).toEqual({ "tenprint-verify": "./dist/bin.js" });
   });
 });
 
 describe("source imports", () => {
   const srcDir = new URL("src/", pkgDir);
   const files = readdirSync(srcDir).filter((f) => f.endsWith(".ts"));
-  it("imports nothing from another @rubric-protocol package or from outside src/", () => {
+  it("imports nothing from another @rubric-protocol or @tenprint package or from outside src/", () => {
     expect(files.length).toBeGreaterThan(0);
     for (const f of files) {
       const text = readFileSync(new URL(f, srcDir), "utf8");

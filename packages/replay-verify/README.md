@@ -1,13 +1,14 @@
-# @rubric-protocol/replay-verify
+# @tenprint/verify
 
-`rubric-replay` checks a Rubric attestation from its files and a public Hedera
-mirror node. It makes **no calls to the Rubric API**. It works with a tiered
+`tenprint-verify` checks a TenPrint (formerly Rubric Protocol) attestation from
+its files and a public Hedera mirror node. It makes **no calls to the TenPrint
+API**. It works with a tiered
 warm record or a completed DAR bundle, together with the tier-2 anchor bundle
 that covers it. Spec: `docs/specs/attestation-index-and-replay.md` §4.
 
 > Status: 0.1.0, unreleased.
 
-**When to use which.** Use `rubric-replay` when you want to check a record
+**When to use which.** Use `tenprint-verify` when you want to check a record
 yourself, offline from our service, from the files plus the public ledger.
 `@rubric-protocol/decision-verify` is our paid API route, which answers the same
 question for a DAR `decisionId` from our index and store.
@@ -118,12 +119,12 @@ after that the result is `UNAVAILABLE`.
 ## Usage
 
 ```
-rubric-replay --record <warm-record.json | dar-bundle.json>
-              --anchor-bundle <anchorId>.json
-              [--keys <rubric-keys.json>]
-              [--mirror https://mainnet-public.mirrornode.hedera.com]
-              [--topic 0.0.10416909]
-              [--json]
+tenprint-verify --record <warm-record.json | dar-bundle.json>
+                --anchor-bundle <anchorId>.json
+                [--keys <rubric-keys.json>]
+                [--mirror https://mainnet-public.mirrornode.hedera.com]
+                [--topic 0.0.10416909]
+                [--json]
 ```
 
 | Exit | Meaning |
@@ -159,7 +160,8 @@ canary attestation whose payload is a commitment hash only:
 
 ### Verify it live
 
-From a checkout of this repo:
+From a checkout of this repo (the package source lives in
+`packages/replay-verify/`; `dist/bin.js` is the `tenprint-verify` bin):
 
 ```
 npm ci && npm run build
@@ -191,7 +193,7 @@ the network:
 $ F=packages/replay-verify/test/fixtures/mainnet/tiered
 $ node packages/replay-verify/scripts/replay-fixture.mjs \
     $F/record.json $F/anchor-bundle.json $F/mirror-messages.json $F/rubric-keys.json
-rubric-replay: PASS (exit 0) — tiered record
+tenprint-verify: PASS (exit 0) — tiered record
   all five steps PASS
 
   [PASS       ] signature ML-DSA-65 over JCS(batch envelope) verifies under the published us key 1ffb9f4a-3ee9-4885-873e-3ba062149eaf

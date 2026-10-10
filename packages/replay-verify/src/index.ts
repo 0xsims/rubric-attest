@@ -1,6 +1,6 @@
 /**
- * @rubric-protocol/replay-verify — standalone replay verifier (spec
- * docs/specs/attestation-index-and-replay.md §4). Makes no calls to the Rubric
+ * @tenprint/verify — standalone replay verifier (spec
+ * docs/specs/attestation-index-and-replay.md §4). Makes no calls to the TenPrint
  * API: only the static keys file (skipped with --keys) and a public mirror node.
  */
 export {
