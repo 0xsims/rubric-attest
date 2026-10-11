@@ -14,7 +14,7 @@
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json",
-    "build": "tsc -p packages/attest-decision/tsconfig.build.json && tsc -p packages/attest-index/tsconfig.build.json && tsc -p packages/jev/tsconfig.build.json && tsc -p packages/schema/tsconfig.build.json && tsc -p packages/verify/tsconfig.build.json && tsc -p packages/evidence/tsconfig.build.json",
+    "build": "tsc -p packages/attest-decision/tsconfig.build.json && tsc -p packages/attest-index/tsconfig.build.json && tsc -p packages/jev/tsconfig.build.json && tsc -p packages/schema/tsconfig.build.json && tsc -p packages/verify/tsconfig.build.json && tsc -p packages/evidence/tsconfig.build.json && tsc -p packages/replay-verify/tsconfig.build.json",
     "clean": "rm -rf packages/*/dist packages/*/*.tsbuildinfo",
     "test": "vitest run",
     "test:perf": "vitest run --config vitest.perf.config.ts",

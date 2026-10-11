@@ -1,0 +1,694 @@
+{
+  "source": "rubric-protocol 54afb5a1 src/verify/spec-merkle.ts buildTieredLeafMessage, leafHash, buildSpecTree, proofForLeaf (verifyProof checked)",
+  "trees": [
+    {
+      "n": 1,
+      "leaves": [
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "5ee62b3c-3f9c-461e-8222-c392aaff32bb",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "b401db783455ba1c76dd0a1ce3cfb862cdf25a1276a28fe248bb151fcd2da5fb"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"5ee62b3c-3f9c-461e-8222-c392aaff32bb\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"b401db783455ba1c76dd0a1ce3cfb862cdf25a1276a28fe248bb151fcd2da5fb\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "4fc525322cd241229dcf9669411c90ecf7b1103d63fbf575e0a61ad304607e2e",
+          "payloadHash": "39d1ae2a33b288d64e95c0f3ee821bd79fbc51ae3f552d78224c15019e937223"
+        }
+      ],
+      "root": "4fc525322cd241229dcf9669411c90ecf7b1103d63fbf575e0a61ad304607e2e",
+      "proofs": [
+        {
+          "index": 0,
+          "merkle_proof": [],
+          "merkle_proof_directions": []
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "leaves": [
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "a11ff960-365f-4c88-8366-b283a5569252",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "65608e837c5fc5f6798f2f9effedcba9ef0b724291e3413637d2f00a7df7f31d"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"a11ff960-365f-4c88-8366-b283a5569252\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"65608e837c5fc5f6798f2f9effedcba9ef0b724291e3413637d2f00a7df7f31d\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "84a9329603a3dacc5789944639be593f52741760db52242b8fc672da4baedb81",
+          "payloadHash": "03ca92dd61d82e6edb7be68ce73377ddd95a954717548645bf38f5e6e6633c97"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "9dd48a84-4567-47fa-8631-8464316066bf",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "043d9d581105f42132c8b9af7162e5893d453f034b9b4cbae1be03e1327744e4"
+            },
+            "model_ref": {
+              "model_id": "vec-model",
+              "model_version": "1.0"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"9dd48a84-4567-47fa-8631-8464316066bf\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"vec-model\",\"model_version\":\"1.0\"},\"payload\":{\"payload_hash_unsalted\":\"043d9d581105f42132c8b9af7162e5893d453f034b9b4cbae1be03e1327744e4\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "2acdd2aab439b3b8aaf6eca7df8d568e350d87c842092113e87578fabfa5b3d0",
+          "payloadHash": "678765dd1b1931d401bdbc2efb1148b9f1cb36cd780076542d12186d81c73e78"
+        }
+      ],
+      "root": "ea6d56ea5359276c4b59fdd164c251d1d64e1118e991bf92079e2b0e759a6b72",
+      "proofs": [
+        {
+          "index": 0,
+          "merkle_proof": [
+            "2acdd2aab439b3b8aaf6eca7df8d568e350d87c842092113e87578fabfa5b3d0"
+          ],
+          "merkle_proof_directions": [
+            "R"
+          ]
+        },
+        {
+          "index": 1,
+          "merkle_proof": [
+            "84a9329603a3dacc5789944639be593f52741760db52242b8fc672da4baedb81"
+          ],
+          "merkle_proof_directions": [
+            "L"
+          ]
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "leaves": [
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "ab25c460-b7b1-4e39-8948-04bf8e599b50",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "698b7fa63acba7b1152e7cd27283472d6f36759d0a927424af7afece35df566d"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"ab25c460-b7b1-4e39-8948-04bf8e599b50\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"698b7fa63acba7b1152e7cd27283472d6f36759d0a927424af7afece35df566d\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "34652f3fa375584c78425c5db7e0719dde5d8f5293c04bf8cf4c4db40e98daa5",
+          "payloadHash": "b41fccdf2c7ece8a5a4221ebe54cd7f2f0d2aada0b06b787744879747fbab4c4"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "7eccb891-859f-4579-88c3-b4dae8b9b618",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "96c4da465118b99323d49beb0be604ec054b514da0e25e564cb8760a3ec23eed"
+            },
+            "model_ref": {
+              "model_id": "vec-model",
+              "model_version": "1.0"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"7eccb891-859f-4579-88c3-b4dae8b9b618\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"vec-model\",\"model_version\":\"1.0\"},\"payload\":{\"payload_hash_unsalted\":\"96c4da465118b99323d49beb0be604ec054b514da0e25e564cb8760a3ec23eed\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "e36b015e232e533626c24b96d94424a1e8c7b483a67168c4c6c56bcdceb59a8b",
+          "payloadHash": "3524d5ea286e0fc4984972120ece562ed30f4e050c3cb69019ea3bcc741b4260"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "ddce7861-ebb0-422f-871c-dca938c19eaa",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "b103076a67503f5681526a83cb9f6dd19dfdf25ccff65409a797c5b7dd48a584"
+            },
+            "compliance_ref": {
+              "risk_level": "high",
+              "jurisdiction": [
+                "EU",
+                "US"
+              ]
+            }
+          },
+          "canonical": "{\"attestation_id\":\"ddce7861-ebb0-422f-871c-dca938c19eaa\",\"attestation_type\":\"tiered\",\"compliance_ref\":{\"jurisdiction\":[\"EU\",\"US\"],\"risk_level\":\"high\"},\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"b103076a67503f5681526a83cb9f6dd19dfdf25ccff65409a797c5b7dd48a584\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "2456b9defbd8131341a9d49664327d62eda7d3466ea5a87e0c6d200bc4863f87",
+          "payloadHash": "92abfe5a4e2abee3cb246ca9c24550e72452e07fcfef86d7afb4957d379f8e11"
+        }
+      ],
+      "root": "b4022afe9f3b2c094cb40e130f90670ecd5db763e23d4bd0ed7b3ea7478a4727",
+      "proofs": [
+        {
+          "index": 0,
+          "merkle_proof": [
+            "e36b015e232e533626c24b96d94424a1e8c7b483a67168c4c6c56bcdceb59a8b",
+            "2456b9defbd8131341a9d49664327d62eda7d3466ea5a87e0c6d200bc4863f87"
+          ],
+          "merkle_proof_directions": [
+            "R",
+            "R"
+          ]
+        },
+        {
+          "index": 1,
+          "merkle_proof": [
+            "34652f3fa375584c78425c5db7e0719dde5d8f5293c04bf8cf4c4db40e98daa5",
+            "2456b9defbd8131341a9d49664327d62eda7d3466ea5a87e0c6d200bc4863f87"
+          ],
+          "merkle_proof_directions": [
+            "L",
+            "R"
+          ]
+        },
+        {
+          "index": 2,
+          "merkle_proof": [
+            "2739f347114d7751f7c7a4c2809f31f832038a2804a075477848b7a1d3cf2053"
+          ],
+          "merkle_proof_directions": [
+            "L"
+          ]
+        }
+      ]
+    },
+    {
+      "n": 4,
+      "leaves": [
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "49e656a5-5054-48e9-804f-c5f3d7295ae9",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "f88b9934de6561466df09c4e3f07bd9fd6d1c591125944a6f7dbb9a5b669b0a8"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"49e656a5-5054-48e9-804f-c5f3d7295ae9\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"f88b9934de6561466df09c4e3f07bd9fd6d1c591125944a6f7dbb9a5b669b0a8\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "23d0ed52962429beee6ae39bc1a06ecca4da0a0201cac4384ae99d53808298a4",
+          "payloadHash": "3e2ebb6e1aa3e6a62082abc2a7f8bd84ae986dcada7530b1a23b3c1cb4ff0703"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "8cb5e89a-8b07-48a4-8ba3-c8d8a026baaf",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "5b2eac9ffe7477a9c42386c410a5590cfabe39e4700eeac09cace27e124826c9"
+            },
+            "model_ref": {
+              "model_id": "vec-model",
+              "model_version": "1.0"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"8cb5e89a-8b07-48a4-8ba3-c8d8a026baaf\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"vec-model\",\"model_version\":\"1.0\"},\"payload\":{\"payload_hash_unsalted\":\"5b2eac9ffe7477a9c42386c410a5590cfabe39e4700eeac09cace27e124826c9\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "04687640c883b1e6d3121a11d701d566fc436c3088e77612dae51a304ffc629b",
+          "payloadHash": "f7a31dc639c64e36f7464377f3277b6e648759299c62facd9c59dd7b82b4cb86"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "14fb9804-1680-4ede-8c5a-4d489ac3cd77",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "b4aa271f15b9cf8a3b87f1444b07b142a5ef5fcdcee4472dc54528a27853438b"
+            },
+            "compliance_ref": {
+              "risk_level": "high",
+              "jurisdiction": [
+                "EU",
+                "US"
+              ]
+            }
+          },
+          "canonical": "{\"attestation_id\":\"14fb9804-1680-4ede-8c5a-4d489ac3cd77\",\"attestation_type\":\"tiered\",\"compliance_ref\":{\"jurisdiction\":[\"EU\",\"US\"],\"risk_level\":\"high\"},\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"b4aa271f15b9cf8a3b87f1444b07b142a5ef5fcdcee4472dc54528a27853438b\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "022739520568ec669960e6031f3e8982baec9b4d63f84296ea15f86b5d7214a0",
+          "payloadHash": "09d19ec9d47f965ca54ecb55f62b5051e9f21b539128c55d343b384d4f07acb9"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "735f67e4-a2ad-4c2f-8da6-d232bb757abb",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "8ec8e4142586317093120a98fe02f07dca396f75292c976ead4af3ceab7e6f8b"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"735f67e4-a2ad-4c2f-8da6-d232bb757abb\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"8ec8e4142586317093120a98fe02f07dca396f75292c976ead4af3ceab7e6f8b\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "851adb49c543c15364c6f92d64851ed02d5a4a23eaa1ba199a5c1cf69c030a06",
+          "payloadHash": "27f8bd79511643b520354cf7b9e88f1118d3952c4ff705209ca5945052f57890"
+        }
+      ],
+      "root": "7d800e579d9194ac909968f9c633b376db8e878b1e675c9f8c91389023b133b1",
+      "proofs": [
+        {
+          "index": 0,
+          "merkle_proof": [
+            "04687640c883b1e6d3121a11d701d566fc436c3088e77612dae51a304ffc629b",
+            "f701be2ed4e4f9140bb94baa8e898791a55f8f7b73131b96fde4a34f5cccbfa5"
+          ],
+          "merkle_proof_directions": [
+            "R",
+            "R"
+          ]
+        },
+        {
+          "index": 1,
+          "merkle_proof": [
+            "23d0ed52962429beee6ae39bc1a06ecca4da0a0201cac4384ae99d53808298a4",
+            "f701be2ed4e4f9140bb94baa8e898791a55f8f7b73131b96fde4a34f5cccbfa5"
+          ],
+          "merkle_proof_directions": [
+            "L",
+            "R"
+          ]
+        },
+        {
+          "index": 2,
+          "merkle_proof": [
+            "851adb49c543c15364c6f92d64851ed02d5a4a23eaa1ba199a5c1cf69c030a06",
+            "f742966ca66fefcb8a14a2ae76ac3eb40c1e00f163087c4764ed9e9d4f2528ed"
+          ],
+          "merkle_proof_directions": [
+            "R",
+            "L"
+          ]
+        },
+        {
+          "index": 3,
+          "merkle_proof": [
+            "022739520568ec669960e6031f3e8982baec9b4d63f84296ea15f86b5d7214a0",
+            "f742966ca66fefcb8a14a2ae76ac3eb40c1e00f163087c4764ed9e9d4f2528ed"
+          ],
+          "merkle_proof_directions": [
+            "L",
+            "L"
+          ]
+        }
+      ]
+    },
+    {
+      "n": 5,
+      "leaves": [
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "ce41813a-ef5b-4bdc-85bb-ffdc4fdc7e67",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "aa754fa2e22d71a96b1a1505b5a0b3e9df31e2bacf1bf5927d809adb9a4560b4"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"ce41813a-ef5b-4bdc-85bb-ffdc4fdc7e67\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"aa754fa2e22d71a96b1a1505b5a0b3e9df31e2bacf1bf5927d809adb9a4560b4\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "900a7b36844983bce9ceb6b50d92d685846508769484810ac8890af7bae428aa",
+          "payloadHash": "30126eb8a5cb0d70a66f28b86e3144c370eef588f48358678b972c0a68729a1d"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "32ab9c81-17b7-4f91-8599-79d32627871e",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "c2f3ac3699e473dffa0a2177d9189db4076f5b6351c0ecfce69e0c6d5745101b"
+            },
+            "model_ref": {
+              "model_id": "vec-model",
+              "model_version": "1.0"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"32ab9c81-17b7-4f91-8599-79d32627871e\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"vec-model\",\"model_version\":\"1.0\"},\"payload\":{\"payload_hash_unsalted\":\"c2f3ac3699e473dffa0a2177d9189db4076f5b6351c0ecfce69e0c6d5745101b\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "a4f4bf16dd9ac4574be8e83c997817290ada1e11930521f3bcb35747342dbfa2",
+          "payloadHash": "a862c1715e2413a7e0e7feb695f066cd3437944a69eeb7d9cd519ae51639a92b"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "7bc0f083-010a-4066-8d59-bc8999fc73b0",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "86c566d7fdffc302dac0e8110a4c315c12388cea5cae778ad01b8615b97a29d7"
+            },
+            "compliance_ref": {
+              "risk_level": "high",
+              "jurisdiction": [
+                "EU",
+                "US"
+              ]
+            }
+          },
+          "canonical": "{\"attestation_id\":\"7bc0f083-010a-4066-8d59-bc8999fc73b0\",\"attestation_type\":\"tiered\",\"compliance_ref\":{\"jurisdiction\":[\"EU\",\"US\"],\"risk_level\":\"high\"},\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"86c566d7fdffc302dac0e8110a4c315c12388cea5cae778ad01b8615b97a29d7\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "8a50f11f67a83e4d96dc0e980995fb6ee850fce4126ba479d3c52aaee20d8e18",
+          "payloadHash": "0bad1c30029adc1767396cfe5ea33eda856ec621383e861010a6ea73713abc8a"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "199a1d6f-5761-454f-8305-98aa0e48c5fb",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "e2e94707652a4595835255c66e9b143ffa918dd065c5ba37fa803d9839757fee"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"199a1d6f-5761-454f-8305-98aa0e48c5fb\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"e2e94707652a4595835255c66e9b143ffa918dd065c5ba37fa803d9839757fee\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "14d125647b4f44adf003cf28dcdc35a0c48e0b065e281ebc46399b0c9130361e",
+          "payloadHash": "81371e4249e55a0dabd66834b1dbf18159ac66801596e4c9f73717d031b7493e"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "61b607f1-69eb-4a6e-878a-8f746f79c896",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "40754ba481257dff5bd4f75d06386b42e1178e06488a70be163ac25c35b40902"
+            },
+            "model_ref": {
+              "model_id": "vec-model",
+              "model_version": "1.0"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"61b607f1-69eb-4a6e-878a-8f746f79c896\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"vec-model\",\"model_version\":\"1.0\"},\"payload\":{\"payload_hash_unsalted\":\"40754ba481257dff5bd4f75d06386b42e1178e06488a70be163ac25c35b40902\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "b32af4fff254f2972d71afa9170914e5abce541130bd99936ea734e2435e8dc5",
+          "payloadHash": "a785af859645ff1e65325305acac7271512a76032afa57c58cb2c096fee71b5c"
+        }
+      ],
+      "root": "9e87e95e696f217d5c545dcc716782df7ff6fbac4931690551bd787dd2a540bf",
+      "proofs": [
+        {
+          "index": 0,
+          "merkle_proof": [
+            "a4f4bf16dd9ac4574be8e83c997817290ada1e11930521f3bcb35747342dbfa2",
+            "01eff654bb1bfbaba3ce6da1139cf0a8bd6f9b6b4126b3d0ba8a8615e97b0312",
+            "b32af4fff254f2972d71afa9170914e5abce541130bd99936ea734e2435e8dc5"
+          ],
+          "merkle_proof_directions": [
+            "R",
+            "R",
+            "R"
+          ]
+        },
+        {
+          "index": 1,
+          "merkle_proof": [
+            "900a7b36844983bce9ceb6b50d92d685846508769484810ac8890af7bae428aa",
+            "01eff654bb1bfbaba3ce6da1139cf0a8bd6f9b6b4126b3d0ba8a8615e97b0312",
+            "b32af4fff254f2972d71afa9170914e5abce541130bd99936ea734e2435e8dc5"
+          ],
+          "merkle_proof_directions": [
+            "L",
+            "R",
+            "R"
+          ]
+        },
+        {
+          "index": 2,
+          "merkle_proof": [
+            "14d125647b4f44adf003cf28dcdc35a0c48e0b065e281ebc46399b0c9130361e",
+            "d028b5222773b06c6404b26528d24b30c04b08055432002c97bdc45d0469184d",
+            "b32af4fff254f2972d71afa9170914e5abce541130bd99936ea734e2435e8dc5"
+          ],
+          "merkle_proof_directions": [
+            "R",
+            "L",
+            "R"
+          ]
+        },
+        {
+          "index": 3,
+          "merkle_proof": [
+            "8a50f11f67a83e4d96dc0e980995fb6ee850fce4126ba479d3c52aaee20d8e18",
+            "d028b5222773b06c6404b26528d24b30c04b08055432002c97bdc45d0469184d",
+            "b32af4fff254f2972d71afa9170914e5abce541130bd99936ea734e2435e8dc5"
+          ],
+          "merkle_proof_directions": [
+            "L",
+            "L",
+            "R"
+          ]
+        },
+        {
+          "index": 4,
+          "merkle_proof": [
+            "11a7242a429e2112e67364db1a03266b6df27759b63466711e97e8754b74c8ab"
+          ],
+          "merkle_proof_directions": [
+            "L"
+          ]
+        }
+      ]
+    },
+    {
+      "n": 7,
+      "leaves": [
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "df53c05d-0f55-4f15-8209-3ecba486bd75",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "111cd4718d2e2a2ad844955d23bc222ed47a54f4d1f4fe38988e241f84816b19"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"df53c05d-0f55-4f15-8209-3ecba486bd75\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"111cd4718d2e2a2ad844955d23bc222ed47a54f4d1f4fe38988e241f84816b19\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "12b4821900e9bca381890440ad84ac137363742b001ce2e0705b5614c86bf23a",
+          "payloadHash": "7d522398653439187a89cbbdf4b35ead91b1b6917b557ebfb7f60bb0344a9cb6"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "c60eb328-310d-48db-8f7a-06b167dc28cd",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "311456fe8c6aabf16b49eb7e83272052a1973fe099b3540835dc208dc9bf3637"
+            },
+            "model_ref": {
+              "model_id": "vec-model",
+              "model_version": "1.0"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"c60eb328-310d-48db-8f7a-06b167dc28cd\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"vec-model\",\"model_version\":\"1.0\"},\"payload\":{\"payload_hash_unsalted\":\"311456fe8c6aabf16b49eb7e83272052a1973fe099b3540835dc208dc9bf3637\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "6d5a2182278bef5ee366725f9af501ede401c0b35e5da2bea89f48916a480ad0",
+          "payloadHash": "da959e3cf0867abcee12379149d0bbba943f5e8c917ae16a5c8aca9da93517b5"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "2ca7fdd5-7928-44ea-8080-0b847dfb06ff",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "7ce762f29a182986dbece8092466621670253e4b07c819dfa64c678e41c73829"
+            },
+            "compliance_ref": {
+              "risk_level": "high",
+              "jurisdiction": [
+                "EU",
+                "US"
+              ]
+            }
+          },
+          "canonical": "{\"attestation_id\":\"2ca7fdd5-7928-44ea-8080-0b847dfb06ff\",\"attestation_type\":\"tiered\",\"compliance_ref\":{\"jurisdiction\":[\"EU\",\"US\"],\"risk_level\":\"high\"},\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"7ce762f29a182986dbece8092466621670253e4b07c819dfa64c678e41c73829\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "04c7ca7767025989d3c49a9678d7f2d02205c5c135551f8a32841a8ac5de6b2b",
+          "payloadHash": "b35bf83412014d26f7b462fac2dfc99eb41465057b0fb6b83a354f4b23975bca"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "ca897175-2f47-4371-85c9-a70c9082ad2d",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "827d25f1b6025508375184983889171972d428d6e7532f64895b682c7312b754"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"ca897175-2f47-4371-85c9-a70c9082ad2d\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"827d25f1b6025508375184983889171972d428d6e7532f64895b682c7312b754\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "bf53b53dc58fbfe912e9f69c03c7efcb3ca69f7669b0ac62ba0eb911b513a65c",
+          "payloadHash": "0578255c36d758a66eee94170cef23f7dc2012c45bcced9f65764412cc8aa470"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "63eb07ec-ac8d-476a-8720-28bd694024ce",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "514feedab8fd8fad2b91449eb377bfecf7a6ad85db52723c2f30a133b4ff6174"
+            },
+            "model_ref": {
+              "model_id": "vec-model",
+              "model_version": "1.0"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"63eb07ec-ac8d-476a-8720-28bd694024ce\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"model_ref\":{\"model_id\":\"vec-model\",\"model_version\":\"1.0\"},\"payload\":{\"payload_hash_unsalted\":\"514feedab8fd8fad2b91449eb377bfecf7a6ad85db52723c2f30a133b4ff6174\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "186e221c3f36fb1a45ac3679bad3bb96c25624dec386784bfa191eb15ea8989d",
+          "payloadHash": "c9e1310d9bf727263e51ca926cf4dd66a7bd585d1af7d9a7aa71aebb2f67b1b1"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "eae97662-ba23-44c1-831a-67e4c0c88fe7",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "03452768e2b2cab1e6027234d87a79ef0cbc6c9722bb552531ec2e6926a3bd28"
+            }
+          },
+          "canonical": "{\"attestation_id\":\"eae97662-ba23-44c1-831a-67e4c0c88fe7\",\"attestation_type\":\"tiered\",\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"03452768e2b2cab1e6027234d87a79ef0cbc6c9722bb552531ec2e6926a3bd28\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "734219d123bf6763ba83b3586689b6ee722fb250d2300805be380af96a3495ee",
+          "payloadHash": "b151f604eae1f1b157a63bdbb2b82d069a9ce4c73f8c8fc7422ae83a0b51263f"
+        },
+        {
+          "leafMessage": {
+            "rubric_version": "1.0",
+            "attestation_type": "tiered",
+            "attestation_id": "4249e833-ab60-4774-8f80-41c43e1151ff",
+            "issuer_node_region": "us",
+            "issued_at": "2026-10-10T00:00:00.000Z",
+            "payload": {
+              "payload_hash_unsalted": "b11547c3f026a074c44dc6311357b2ca61a1fbe78e40f27fb7bef33a04c28e9d"
+            },
+            "compliance_ref": {
+              "risk_level": "high",
+              "jurisdiction": [
+                "EU",
+                "US"
+              ]
+            }
+          },
+          "canonical": "{\"attestation_id\":\"4249e833-ab60-4774-8f80-41c43e1151ff\",\"attestation_type\":\"tiered\",\"compliance_ref\":{\"jurisdiction\":[\"EU\",\"US\"],\"risk_level\":\"high\"},\"issued_at\":\"2026-10-10T00:00:00.000Z\",\"issuer_node_region\":\"us\",\"payload\":{\"payload_hash_unsalted\":\"b11547c3f026a074c44dc6311357b2ca61a1fbe78e40f27fb7bef33a04c28e9d\"},\"rubric_version\":\"1.0\"}",
+          "leafHash": "9376014082a227c1867479bac9b8f81d26ccf4923b7ef592a3b821fa7e584ade",
+          "payloadHash": "9986e83673b500fa44695344e45690f680b6c136584977bb056a7710d5f2fafa"
+        }
+      ],
+      "root": "22618e23142434f800ead67b989068cefe6bdbd6b27f35cd3831b75b432154b7",
+      "proofs": [
+        {
+          "index": 0,
+          "merkle_proof": [
+            "6d5a2182278bef5ee366725f9af501ede401c0b35e5da2bea89f48916a480ad0",
+            "58b8d6f6f240462aaee0b7fccb498dd5f99ebf79b6b514584c86ddcc6eece752",
+            "2baeb10ea12b63176fc86386e57eb71ceb92e2296d9f7d1d59e26aa7f61c64c3"
+          ],
+          "merkle_proof_directions": [
+            "R",
+            "R",
+            "R"
+          ]
+        },
+        {
+          "index": 1,
+          "merkle_proof": [
+            "12b4821900e9bca381890440ad84ac137363742b001ce2e0705b5614c86bf23a",
+            "58b8d6f6f240462aaee0b7fccb498dd5f99ebf79b6b514584c86ddcc6eece752",
+            "2baeb10ea12b63176fc86386e57eb71ceb92e2296d9f7d1d59e26aa7f61c64c3"
+          ],
+          "merkle_proof_directions": [
+            "L",
+            "R",
+            "R"
+          ]
+        },
+        {
+          "index": 2,
+          "merkle_proof": [
+            "bf53b53dc58fbfe912e9f69c03c7efcb3ca69f7669b0ac62ba0eb911b513a65c",
+            "4513734845b16b96ac5a9b064c08ad5018091346e4ea9d34cf2033943dc48885",
+            "2baeb10ea12b63176fc86386e57eb71ceb92e2296d9f7d1d59e26aa7f61c64c3"
+          ],
+          "merkle_proof_directions": [
+            "R",
+            "L",
+            "R"
+          ]
+        },
+        {
+          "index": 3,
+          "merkle_proof": [
+            "04c7ca7767025989d3c49a9678d7f2d02205c5c135551f8a32841a8ac5de6b2b",
+            "4513734845b16b96ac5a9b064c08ad5018091346e4ea9d34cf2033943dc48885",
+            "2baeb10ea12b63176fc86386e57eb71ceb92e2296d9f7d1d59e26aa7f61c64c3"
+          ],
+          "merkle_proof_directions": [
+            "L",
+            "L",
+            "R"
+          ]
+        },
+        {
+          "index": 4,
+          "merkle_proof": [
+            "734219d123bf6763ba83b3586689b6ee722fb250d2300805be380af96a3495ee",
+            "9376014082a227c1867479bac9b8f81d26ccf4923b7ef592a3b821fa7e584ade",
+            "0b3d9a50cdad02f7388d72c3880773c03bd1aac5a2da9b234c49afe507fb180d"
+          ],
+          "merkle_proof_directions": [
+            "R",
+            "R",
+            "L"
+          ]
+        },
+        {
+          "index": 5,
+          "merkle_proof": [
+            "186e221c3f36fb1a45ac3679bad3bb96c25624dec386784bfa191eb15ea8989d",
+            "9376014082a227c1867479bac9b8f81d26ccf4923b7ef592a3b821fa7e584ade",
+            "0b3d9a50cdad02f7388d72c3880773c03bd1aac5a2da9b234c49afe507fb180d"
+          ],
+          "merkle_proof_directions": [
+            "L",
+            "R",
+            "L"
+          ]
+        },
+        {
+          "index": 6,
+          "merkle_proof": [
+            "47e6865d8ac320a55e04369c0f97f31120b56cafbfe9d6490ed1274239304cfe",
+            "0b3d9a50cdad02f7388d72c3880773c03bd1aac5a2da9b234c49afe507fb180d"
+          ],
+          "merkle_proof_directions": [
+            "L",
+            "L"
+          ]
+        }
+      ]
+    }
+  ]
+}

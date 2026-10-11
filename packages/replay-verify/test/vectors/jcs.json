@@ -1,0 +1,26 @@
+{
+  "source": "rubric-protocol 54afb5a1 src/verify/canonical.ts canonicalize()",
+  "note": "input is JSON text; parse it with JSON.parse, then canonicalize",
+  "cases": [
+    {
+      "input": "{\"b\":1,\"a\":2,\"A\":3,\"_\":4,\"é\":5,\"😀\":6,\"\\uffff\":7,\"aa\":8,\"10\":9,\"9\":10}",
+      "canonical": "{\"10\":9,\"9\":10,\"A\":3,\"_\":4,\"a\":2,\"aa\":8,\"b\":1,\"é\":5,\"😀\":6,\"￿\":7}"
+    },
+    {
+      "input": "[0,-0,1e21,1e-7,0.1,123456789012345680000,-1.5,5e-324,1.7976931348623157e308,100,1e2]",
+      "canonical": "[0,0,1e+21,1e-7,0.1,123456789012345680000,-1.5,5e-324,1.7976931348623157e+308,100,100]"
+    },
+    {
+      "input": "{\"s\":\"\\u0000\\b\\t\\n\\f\\r\\u001f\\u007f \\\" \\\\ / é \\u2028 😀\"}",
+      "canonical": "{\"s\":\"\\u0000\\b\\t\\n\\f\\r\\u001f \\\" \\\\ / é   😀\"}"
+    },
+    {
+      "input": "{\"nested\":{\"z\":[{\"y\":null,\"x\":true},false],\"a\":{}},\"empty\":[],\"str\":\"\"}",
+      "canonical": "{\"empty\":[],\"nested\":{\"a\":{},\"z\":[{\"x\":true,\"y\":null},false]},\"str\":\"\"}"
+    },
+    {
+      "input": "{\"__leafType\":\"DOCUMENT_HASH\",\"forestRoot\":\"00\",\"itemCount\":3}",
+      "canonical": "{\"__leafType\":\"DOCUMENT_HASH\",\"forestRoot\":\"00\",\"itemCount\":3}"
+    }
+  ]
+}
