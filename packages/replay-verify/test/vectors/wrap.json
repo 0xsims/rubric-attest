@@ -1,0 +1,25 @@
+{
+  "source": "rubric-protocol 54afb5a1 src/verify/merkle.ts buildForest([{root}], 'tier2', 'sha3-256').forestRoot",
+  "cases": [
+    {
+      "root": "155549cff0b86019147978c2b0f2acefbf35aaf94295151bab1b9f34bac6ec7a",
+      "wrapped": "5cddc6435f472d59ec8dd537991a75ce9cf9aae6eb99d8efc3c0a6ad82908d4d"
+    },
+    {
+      "root": "022059df5fb446b3e146292adcad099b67f47228443e4dedaa57fbb2ecfab23b",
+      "wrapped": "b796bcfaa1b4e25f9740c41a9a9126479f122578a4640213d651890a96f47a05"
+    },
+    {
+      "root": "62f6a37e01ae158c6ab8a300a1774e575915802c9825aa76d5ea02ba05109872",
+      "wrapped": "949988838a9d8e2375c0a7444952973c97279ced0779088e33f6254b5329b522"
+    },
+    {
+      "root": "0000000000000000000000000000000000000000000000000000000000000000",
+      "wrapped": "999db4d4287b5215208d11e40a27ca54aca009b25c4f7ab91ad8aa9360f06371"
+    },
+    {
+      "root": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "wrapped": "66d269c72bbba848b623f9592bd779ab8f1686b883063509d070cc025aa28065"
+    }
+  ]
+}

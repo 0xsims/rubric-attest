@@ -1,0 +1,89 @@
+{
+  "source": "rubric-protocol 54afb5a1 src/verify/merkle.ts makeLeafV2('DOCUMENT_HASH', {forestRoot,itemCount}, 'sha3-256') -> buildTreeV3 -> buildForest([tree]) (as tiered-aggregator.ts:553-561)",
+  "cases": [
+    {
+      "flushCount": 1,
+      "flushes": [
+        {
+          "flushId": "52c74f1d-25f7-48b1-8133-9d3e45d8636d",
+          "forestRoot": "4fc525322cd241229dcf9669411c90ecf7b1103d63fbf575e0a61ad304607e2e",
+          "itemCount": 1
+        }
+      ],
+      "leaves": [
+        {
+          "preimage": "{\"__leafType\":\"DOCUMENT_HASH\",\"forestRoot\":\"4fc525322cd241229dcf9669411c90ecf7b1103d63fbf575e0a61ad304607e2e\",\"itemCount\":1}",
+          "hash": "sha3-256:23bc18771146935cf3eeac0d62c89baa196baeb6c2d600fb87766cbdb441731e"
+        }
+      ],
+      "treeRoot": "155549cff0b86019147978c2b0f2acefbf35aaf94295151bab1b9f34bac6ec7a",
+      "treeVersion": 3,
+      "aggregateRoot": "5cddc6435f472d59ec8dd537991a75ce9cf9aae6eb99d8efc3c0a6ad82908d4d"
+    },
+    {
+      "flushCount": 2,
+      "flushes": [
+        {
+          "flushId": "0d184850-8579-4e61-88ad-2b798c06bc78",
+          "forestRoot": "4fc525322cd241229dcf9669411c90ecf7b1103d63fbf575e0a61ad304607e2e",
+          "itemCount": 1
+        },
+        {
+          "flushId": "cb4c2f2e-fb01-4b74-89dd-ef5789c8ba77",
+          "forestRoot": "ea6d56ea5359276c4b59fdd164c251d1d64e1118e991bf92079e2b0e759a6b72",
+          "itemCount": 2
+        }
+      ],
+      "leaves": [
+        {
+          "preimage": "{\"__leafType\":\"DOCUMENT_HASH\",\"forestRoot\":\"4fc525322cd241229dcf9669411c90ecf7b1103d63fbf575e0a61ad304607e2e\",\"itemCount\":1}",
+          "hash": "sha3-256:23bc18771146935cf3eeac0d62c89baa196baeb6c2d600fb87766cbdb441731e"
+        },
+        {
+          "preimage": "{\"__leafType\":\"DOCUMENT_HASH\",\"forestRoot\":\"ea6d56ea5359276c4b59fdd164c251d1d64e1118e991bf92079e2b0e759a6b72\",\"itemCount\":2}",
+          "hash": "sha3-256:5d61e65f66fba4683da4a7f8f715adff3c4fa51e02d25d97d51cda70ca6cb1ba"
+        }
+      ],
+      "treeRoot": "022059df5fb446b3e146292adcad099b67f47228443e4dedaa57fbb2ecfab23b",
+      "treeVersion": 3,
+      "aggregateRoot": "b796bcfaa1b4e25f9740c41a9a9126479f122578a4640213d651890a96f47a05"
+    },
+    {
+      "flushCount": 3,
+      "flushes": [
+        {
+          "flushId": "3d8c9fdb-6e30-49e5-8d05-23a8e9323453",
+          "forestRoot": "4fc525322cd241229dcf9669411c90ecf7b1103d63fbf575e0a61ad304607e2e",
+          "itemCount": 1
+        },
+        {
+          "flushId": "0b1fb9d8-f4f9-4c0c-8685-f61b964b0826",
+          "forestRoot": "ea6d56ea5359276c4b59fdd164c251d1d64e1118e991bf92079e2b0e759a6b72",
+          "itemCount": 2
+        },
+        {
+          "flushId": "c935cce4-e2cc-48b3-800f-b4bfc2c775d1",
+          "forestRoot": "b4022afe9f3b2c094cb40e130f90670ecd5db763e23d4bd0ed7b3ea7478a4727",
+          "itemCount": 3
+        }
+      ],
+      "leaves": [
+        {
+          "preimage": "{\"__leafType\":\"DOCUMENT_HASH\",\"forestRoot\":\"4fc525322cd241229dcf9669411c90ecf7b1103d63fbf575e0a61ad304607e2e\",\"itemCount\":1}",
+          "hash": "sha3-256:23bc18771146935cf3eeac0d62c89baa196baeb6c2d600fb87766cbdb441731e"
+        },
+        {
+          "preimage": "{\"__leafType\":\"DOCUMENT_HASH\",\"forestRoot\":\"ea6d56ea5359276c4b59fdd164c251d1d64e1118e991bf92079e2b0e759a6b72\",\"itemCount\":2}",
+          "hash": "sha3-256:5d61e65f66fba4683da4a7f8f715adff3c4fa51e02d25d97d51cda70ca6cb1ba"
+        },
+        {
+          "preimage": "{\"__leafType\":\"DOCUMENT_HASH\",\"forestRoot\":\"b4022afe9f3b2c094cb40e130f90670ecd5db763e23d4bd0ed7b3ea7478a4727\",\"itemCount\":3}",
+          "hash": "sha3-256:58f34b2e1bdd284868731e63b62e90cc57bfe89b0f5eaf0719affbb3ab4078a8"
+        }
+      ],
+      "treeRoot": "62f6a37e01ae158c6ab8a300a1774e575915802c9825aa76d5ea02ba05109872",
+      "treeVersion": 3,
+      "aggregateRoot": "949988838a9d8e2375c0a7444952973c97279ced0779088e33f6254b5329b522"
+    }
+  ]
+}
