@@ -15,14 +15,21 @@ coreutils. No TenPrint code runs during verification.
    `total_items` match the bundle.
 5. **Signatures.** Each ML-DSA-65 signature (pure, empty context) verifies over
    `JCS(signedFields)`, and its public key is one published for that region in
-   `rubric-keys.json`. Keys are compared as bytes. Retired keys are accepted,
-   because they still verify the anchors they signed.
+   `rubric-keys.json`. Keys are compared as bytes. A key entry with no `status`
+   field is treated as active, but an explicit `"status": null` is rejected as
+   a malformed key file (exit 1). Keys with status `active` or `retired` are
+   trusted, because retired keys still verify the anchors they signed. Any other
+   status (`revoked`, `compromised` or anything else) is rejected, and the
+   script prints the region, key id and status it rejected. The retired
+   `legacy-shared-2026h1` key is published with the same bytes for every
+   region, so anchors signed only with it cannot reach quorum: each key is
+   counted once.
 6. **Quorum.** At least 3 valid signatures from distinct regions with distinct
    keys. The threshold is fixed in the script and is not read from the bundle.
 
 If you leave out `rubric-keys.json`, signatures are checked against the keys
 inside the bundle. That only shows the signatures are well formed. It does not
-show who made them, and the result line says so.
+show who made them, so the result line says so and the script exits 2.
 
 ## Requirements
 
@@ -30,6 +37,7 @@ show who made them, and the result line says so.
   `openssl list -signature-algorithms | grep ML-DSA-65`.
 - jq
 - coreutils (`od`, `base64`, `mktemp`, `wc`, `tr`)
+- sed
 - bash 4 or later
 
 ## Usage
@@ -38,8 +46,14 @@ show who made them, and the result line says so.
 verify-with-openssl.sh BUNDLE.json [rubric-keys.json]
 ```
 
-Exit status is 0 on PASS, 1 on FAIL, 2 if a tool is missing or OpenSSL has no
-ML-DSA-65.
+Exit status:
+
+- `0` pass: every check passed and the signers are bound to `rubric-keys.json`.
+- `1` fail: a check failed, or the bundle or key registry is malformed. The
+  script prints `RESULT: FAIL` and the reason.
+- `2` unbound: no `rubric-keys.json` was given, so signers are not bound to
+  published keys. The script also exits 2 if a required tool is missing or
+  OpenSSL lacks sha3-256 or ML-DSA-65.
 
 Run it on the included example from this directory:
 
@@ -54,7 +68,7 @@ published key registry.
 Expected output:
 
 ```
-Bundle: /tmp/pub-proof.json
+Bundle: examples/b5effad6-proof.json
 hop0  leaf
   PASS  SHA-256(0x00||JCS(leafMessage)) = leafHash
 hop1  batch inclusion
@@ -68,7 +82,7 @@ federation
   PASS  signedFields.anchor_id = hop2.anchorId
   PASS  tier1_count matches flush list
   PASS  total_items matches flush list
-  trusted keys: /tmp/pub-keys.json
+  trusted keys: examples/rubric-keys.json
   PASS  us: ML-DSA-65 signature verifies
   PASS  sg: ML-DSA-65 signature verifies
   PASS  jp: ML-DSA-65 signature verifies
@@ -117,7 +131,7 @@ The hash checks still pass, because `anchored_at` is not part of the Merkle
 path. Every signature fails, the quorum is not met, and the script exits 1:
 
 ```
-Bundle: /tmp/pub-tampered.json
+Bundle: /tmp/tampered.json
 hop0  leaf
   PASS  SHA-256(0x00||JCS(leafMessage)) = leafHash
 hop1  batch inclusion
@@ -131,7 +145,7 @@ federation
   PASS  signedFields.anchor_id = hop2.anchorId
   PASS  tier1_count matches flush list
   PASS  total_items matches flush list
-  trusted keys: /tmp/pub-keys.json
+  trusted keys: examples/rubric-keys.json
   FAIL  us: ML-DSA-65 signature does not verify
   FAIL  sg: ML-DSA-65 signature does not verify
   FAIL  jp: ML-DSA-65 signature does not verify
