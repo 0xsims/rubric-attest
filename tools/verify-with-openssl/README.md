@@ -29,7 +29,18 @@ coreutils. No TenPrint code runs during verification.
 
 If you leave out `rubric-keys.json`, signatures are checked against the keys
 inside the bundle. That only shows the signatures are well formed. It does not
-show who made them, so the result line says so and the script exits 2.
+show who made them, so the script never reports a pass in this mode. It prints
+`RESULT: UNBOUND (signatures well formed but not bound to published keys)` and
+exits 2.
+
+`rubric-keys.json` must contain exactly one JSON document. An empty file, or a
+file with a second document after the first, is rejected with `RESULT: FAIL`
+and exit 1.
+
+Values taken from the bundle or the key file (regions, key ids, anchor ids and
+any other text) are printed with control characters and newlines removed, so a
+bundle cannot print a line that looks like a `RESULT` line. Only the script
+itself prints `RESULT` lines.
 
 ## Requirements
 
@@ -49,11 +60,13 @@ verify-with-openssl.sh BUNDLE.json [rubric-keys.json]
 Exit status:
 
 - `0` pass: every check passed and the signers are bound to `rubric-keys.json`.
-- `1` fail: a check failed, or the bundle or key registry is malformed. The
-  script prints `RESULT: FAIL` and the reason.
+- `1` fail: a check failed, or the bundle or key registry is malformed
+  (including a key registry that is not exactly one JSON document). The script
+  prints `RESULT: FAIL` and the reason.
 - `2` unbound: no `rubric-keys.json` was given, so signers are not bound to
-  published keys. The script also exits 2 if a required tool is missing or
-  OpenSSL lacks sha3-256 or ML-DSA-65.
+  published keys. The script prints `RESULT: UNBOUND`. It also exits 2, with
+  no `RESULT` line, if a required tool is missing or OpenSSL lacks sha3-256 or
+  ML-DSA-65.
 
 Run it on the included example from this directory:
 

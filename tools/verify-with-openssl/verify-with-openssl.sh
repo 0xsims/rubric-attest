@@ -8,8 +8,9 @@
 # rubric-keys.json is /.well-known/rubric-keys.json. Without it, signatures are checked against the
 # keys the bundle itself carries. That proves the signatures are well formed, not who made them.
 #
-# Exit status: 0 pass, 1 fail (including a missing BUNDLE argument), 2 unbound (no rubric-keys.json),
-# a required tool is missing, or OpenSSL lacks sha3-256 or ML-DSA-65.
+# Exit status: 0 pass, 1 fail (including a missing BUNDLE argument or a rubric-keys.json that is not
+# exactly one JSON document), 2 unbound (no rubric-keys.json; prints RESULT: UNBOUND), a required
+# tool is missing, or OpenSSL lacks sha3-256 or ML-DSA-65.
 #
 # Construction (treeVersion 3, see src/verify/merkle.ts and src/verify/spec-merkle.ts):
 #   leaf       = SHA-256(0x00 || JCS(leafMessage))
@@ -36,9 +37,13 @@ ALGS=$(openssl list -signature-algorithms 2>/dev/null) || ALGS=""
 
 WORK=$(mktemp -d); trap 'rm -rf "$WORK"' EXIT
 FAIL=0
-ok()  { printf '  PASS  %s\n' "$*"; }
-bad() { printf '  FAIL  %s\n' "$*"; FAIL=1; }
-die() { printf '  FAIL  %s\n' "$*"; echo "RESULT: FAIL"; exit 1; }
+# Bundle and key-file values are untrusted. Drop C0 controls (including newlines), DEL and UTF-8 C1
+# controls before printing, so no value can start a new line or forge a RESULT line. The sed loop
+# repeats until nothing changes, so removing one C1 pair cannot leave another behind.
+clean() { printf '%s' "$*" | LC_ALL=C tr -d '\000-\037\177' | LC_ALL=C sed ':a; s/\xc2[\x80-\x9f]//g; ta'; }
+ok()  { printf '  PASS  %s\n' "$(clean "$*")"; }
+bad() { printf '  FAIL  %s\n' "$(clean "$*")"; FAIL=1; }
+die() { printf '  FAIL  %s\n' "$(clean "$*")"; echo "RESULT: FAIL"; exit 1; }
 # Any unchecked jq (or other) failure is a FAIL with exit 1, never jq's own exit code.
 set -E
 trap 'rc=$?; printf "  FAIL  command failed (exit %s): %s\n" "$rc" "$BASH_COMMAND"; echo "RESULT: FAIL"; exit 1' ERR
@@ -59,7 +64,7 @@ jcs() {
   jq -S -c 'walk(if type=="number" then . + 0 else . end)' <<<"$1" | tr -d '\n'
 }
 
-echo "Bundle: $BUNDLE"
+echo "Bundle: $(clean "$BUNDLE")"
 jq -e 'type == "object"' "$BUNDLE" >/dev/null 2>&1 || die "malformed bundle: $BUNDLE is unreadable or not a JSON object"
 
 # ---- hop0: leafMessage -> leafHash --------------------------------------------------------------
@@ -143,9 +148,13 @@ jcs "$SF" > "$WORK/msg" || die "signedFields could not be canonicalized"
 spki() { { printf '\x30\x82\x07\xb2\x30\x0b\x06\x09\x60\x86\x48\x01\x65\x03\x04\x03\x12\x03\x82\x07\xa1\x00'; cat "$1"; } > "$2"; }
 
 if [[ -n $KEYS ]]; then
+  # Slurp the registry and require exactly one JSON document, so an empty file or a second
+  # document appended after the first cannot change which keys are trusted.
+  NDOC=$(jq -s 'length' "$KEYS" 2>/dev/null) || die "$KEYS is unreadable or not JSON"
+  [[ $NDOC == 1 ]] || die "malformed $KEYS: contains $NDOC JSON documents, expected exactly one"
   # Validate the whole registry in one pass before any key matching. Prints the first problem, or
   # nothing if the file is well formed. An explicit "status": null is rejected.
-  KEYERR=$(jq -r '
+  KEYERR=$(jq -s -r '.[0] |
     if type != "object" then "top level is not a JSON object"
     elif .format != "rubric-keys/1" then "format is not rubric-keys/1"
     elif (.signers | type) != "array" then ".signers is not an array"
@@ -160,11 +169,11 @@ if [[ -n $KEYS ]]; then
   [[ -z $KEYERR ]] || die "malformed $KEYS: $KEYERR"
   # One line per ML-DSA-65 key: region, keyId, status (absent means active), publicKey, separated by
   # 0x1f. Control characters are replaced with "?" so no field can split or forge a line.
-  KEYTAB=$(jq -r '.signers[] | select(.algorithm == "ML-DSA-65")
+  KEYTAB=$(jq -s -r '.[0].signers[] | select(.algorithm == "ML-DSA-65")
              | [.region, (.keyId | tostring), (if has("status") then .status else "active" end), .publicKey]
              | map(tostring | explode | map(if . < 32 or . == 127 then 63 else . end) | implode)
              | join("\u001f")' "$KEYS" 2>/dev/null) || die "$KEYS: key lookup failed"
-  echo "  trusted keys: $KEYS"
+  echo "  trusted keys: $(clean "$KEYS")"
 else
   echo "  WARN  no rubric-keys.json given: checking against keys embedded in the bundle (no identity binding)"
 fi
@@ -203,7 +212,7 @@ for ((i = 0; i < NS; i++)); do
   if openssl pkeyutl -verify -pubin -inkey "$WORK/pk.der" -keyform DER -rawin \
        -in "$WORK/msg" -sigfile "$WORK/sig" >/dev/null 2>&1; then
     if [[ -n ${SEEN_REGION[$REGION]:-} || -n ${SEEN_KEY[$CLAIMED]:-} ]]; then
-      echo "  ----  $REGION: valid but duplicate region or key, not counted"
+      echo "  ----  $(clean "$REGION"): valid but duplicate region or key, not counted"
     else
       SEEN_REGION[$REGION]=1; SEEN_KEY[$CLAIMED]=1; COUNT=$((COUNT + 1))
       ok "$REGION: ML-DSA-65 signature verifies"
@@ -218,5 +227,5 @@ echo
 echo "Not checked here: the HCS ledger anchor (fetch hcs.mirrorNodeUrl, base64-decode .message,"
 echo "compare .aggregateRoot) and the optional payload commitment, which needs your record + payloadKey."
 if ((FAIL)); then echo "RESULT: FAIL"; exit 1; fi
-if [[ -z $KEYS ]]; then echo "RESULT: PASS (signers not bound to published keys)"; exit 2; fi
+if [[ -z $KEYS ]]; then echo "RESULT: UNBOUND (signatures well formed but not bound to published keys)"; exit 2; fi
 echo "RESULT: PASS"
