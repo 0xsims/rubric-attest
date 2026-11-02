@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Chain-check: build a continuity report for an agent's per-agent `prev` chain
  * (tasks/P4.md). Forks (a decision with >1 child) are reported as branches, and

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Ingest attestation-index.jsonl into the index (tasks/P6-index.md,
  * docs/specs/attestation-index-and-replay.md §3.5, decision D5).

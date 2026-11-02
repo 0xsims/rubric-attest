@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Merkle inclusion proofs over SHA3-256 (tasks/P4.md; interior-node hashing is
  * defined by the attestation service per spec/dar-0.1.md §4.3). Leaves are DAR

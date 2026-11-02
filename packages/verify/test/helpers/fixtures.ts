@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 import { DarBuilder, leafHash, type DarCore, type HashString } from "@rubric-protocol/attest-decision";
 import { buildMerkleTree } from "../../src/merkle.js";
 import type {

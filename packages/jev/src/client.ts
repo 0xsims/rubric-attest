@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Stub Jev client (tasks/P3.md). Emits Jev's documented decision shape, standing
  * in for the real external Jev service in tests and local dev. Deterministic

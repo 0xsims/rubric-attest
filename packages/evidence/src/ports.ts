@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Ports for evidence export (tasks/P5.md). The assembly logic depends only on
  * these, so tests inject mocks and the CLI injects real adapters that read the

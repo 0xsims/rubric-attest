@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * DAR builder (spec/dar-0.1.md §2). Assembles a HASHES-ONLY DAR core from
  * adapter inputs: hashes the schema, input, and output (JCS+SHA3-256), derives

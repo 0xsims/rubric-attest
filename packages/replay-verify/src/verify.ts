@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * The five replay steps (spec §4.3). Each value is checked against the one
  * before it; no step accepts a value only because it came from an input file.

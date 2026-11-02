@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * End-to-end verifier tests against synthesized fixtures (signed with TEST keys)
  * served through a fake mirror on the injected fetch. No network.

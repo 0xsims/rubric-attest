@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * @rubric-protocol/jev — Jev decision-shape adapter (tasks/P3.md).
  *

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Constants for the replay verifier (spec docs/specs/attestation-index-and-replay.md §4).
  */

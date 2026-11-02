@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Batch transport. One POST per flush to /v1/tiered-attest (tasks/P1.md).
  * The SDK reads exactly one credential env var: RUBRIC_API_KEY (CLAUDE.md).

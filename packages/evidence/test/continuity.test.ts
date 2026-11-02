@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 import { describe, it, expect, afterEach } from "vitest";
 import { buildSchemaChangeLog, exportEvidence, openIndexReader, openStoreReader } from "../src/index.js";
 import type { IndexRow } from "../src/index.js";

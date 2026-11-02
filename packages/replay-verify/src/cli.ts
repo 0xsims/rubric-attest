@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * tenprint-verify --record <warm-record.json | dar-bundle.json>
  *               --anchor-bundle <anchorId>.json

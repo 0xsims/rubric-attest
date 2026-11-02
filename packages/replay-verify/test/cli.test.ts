@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /** CLI: arguments, exit codes (§4.4) and the --json report shape. */
 import { describe, expect, it } from "vitest";
 import { main } from "../src/cli.js";

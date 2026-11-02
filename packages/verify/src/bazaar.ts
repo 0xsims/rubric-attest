@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * x402 discovery + settlement (tasks/P4.md). An unpaid request is answered with
  * `svcSend402`: HTTP 402 carrying a "bazaar blob" — the discoverable payment

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import globals from "globals";

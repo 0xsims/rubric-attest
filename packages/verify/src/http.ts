@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Framework-agnostic request/response shapes for the route, plus a thin Node
  * `http` adapter. The route is a pure `Handler` so tests drive it directly; the

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Input recognition (spec §4.1). A record that is not a tiered warm record or
  * a completed DAR bundle is a usage error (exit 2), not a verification result.

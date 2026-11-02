@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * --example: the bundled canary case, end to end through the CLI, under the §4.2 network guard.
  * The recorded mirror message is served through the injected fetch; the keys URLs fail, so a

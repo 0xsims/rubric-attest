@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Frozen DAR/0.1 constants and types (spec/dar-0.1.md §2, §4).
  */

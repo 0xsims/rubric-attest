@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * The keys file (spec §2.6) and the anchor-payer precedence rule (§4.3 step 5).
  */

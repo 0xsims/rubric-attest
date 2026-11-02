@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * @tenprint/verify — standalone replay verifier (spec
  * docs/specs/attestation-index-and-replay.md §4). Makes no calls to the TenPrint

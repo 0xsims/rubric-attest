@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * SHA3-256 hashing (spec/dar-0.1.md §4). SHA3-256 everywhere — an invariant,
  * not a per-call choice. Hash strings are `sha3-256:<64 lowercase hex>`.

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * CLI (tasks/P5.md):
  *   rubric-evidence export --agent <id> --index <dir> --store <dir> \

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Test helpers: vectors, TEST keys, a synthetic mirror node served through the
  * injected fetch (tests never touch the network), and fixture builders.

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Assemble an evidence bundle (tasks/P5.md): DARs + proofs + anchor refs for an
  * agent over a ts range, a continuity report (reusing @rubric-protocol/decision-verify chainCheck,

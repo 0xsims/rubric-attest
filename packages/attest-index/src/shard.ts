@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * A single day-shard: one WAL-mode SQLite file with the four indexed queries
  * from tasks/P2.md. `insert` is idempotent (keyed on attestationId), which is
