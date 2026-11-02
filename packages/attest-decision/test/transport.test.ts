@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { HttpTransport, SDK_VERSION, SDK_VERSION_HEADER, TransportError } from "../src/index.js";

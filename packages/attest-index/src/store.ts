@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Index — a directory of day-shards (tasks/P2.md). Routes writes to the shard
  * for a row's `ts` day, and fans the four queries out across shards, merging.

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Offline adapters (tasks/P5.md): read the SQLite index shards (read-only) and
  * the bundle-store files directly — no network, no HCS, no payment.

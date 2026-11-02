@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * JCS (RFC 8785) with the semantics of rubric-protocol `src/verify/canonical.ts:33`:
  * keys sorted by UTF-16 code units, numbers as `String(n)` (-0 → "0"), only

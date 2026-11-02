@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Export orchestration: assemble the evidence bundle and render its plain-text
  * summary together (tasks/P5.md).

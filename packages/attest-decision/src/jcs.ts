@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * JCS canonicalization — RFC 8785 (spec/dar-0.1.md §3).
  *

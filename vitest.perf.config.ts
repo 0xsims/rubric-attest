@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 import { defineConfig } from "vitest/config";
 
 // Performance-acceptance suite (tasks P1/P2): builds large fixtures and asserts

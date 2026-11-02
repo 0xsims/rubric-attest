@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * ULID (https://github.com/ulid/spec): 48-bit millisecond timestamp + 80 bits
  * of randomness, Crockford base32, 26 chars. Used for `decisionId` (spec §2).

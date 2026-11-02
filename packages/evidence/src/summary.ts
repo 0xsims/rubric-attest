@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Plain-text summary of an evidence bundle (tasks/P5.md). Deterministic — every
  * line is derived from bundle fields, so it is stable for golden comparison.

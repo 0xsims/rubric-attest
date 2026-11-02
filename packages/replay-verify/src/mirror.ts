@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Mirror-node paging, the per-chunk origin check, and chunk reassembly
  * (spec §4.3 step 5).

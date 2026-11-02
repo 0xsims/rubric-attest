@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * x402 payment gate (tasks/P4.md). Fronts a handler: an unpaid request is
  * answered instantly with `svcSend402` (the bazaar discovery blob) — the wrapped

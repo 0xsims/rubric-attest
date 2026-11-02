@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /** Package-level invariants: no service code, pinned dependency, the trust root. */
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";

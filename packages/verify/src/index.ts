@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * @rubric-protocol/decision-verify — the x402-gated decision-verify route (tasks/P4.md).
  *

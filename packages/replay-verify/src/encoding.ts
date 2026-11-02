@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Strict encodings and hashes (spec §4.3, input rules). `Buffer.from(s, "hex")`
  * stops silently at the first bad character (the RUBRIC-SEC-2026-001 class), so

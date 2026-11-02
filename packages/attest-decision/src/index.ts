@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * @rubric-protocol/attest-decision — core SDK (DAR/0.1).
  *

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Golden vectors generated from rubric-protocol's own code (54afb5a1; see
  * vectors/README.md) must reproduce bit-for-bit with this package's code.

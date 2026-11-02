@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import { zodToSchema } from "../src/index.js";

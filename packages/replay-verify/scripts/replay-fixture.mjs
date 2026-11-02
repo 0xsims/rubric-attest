@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 // Run tenprint-verify offline against a recorded case: the real CLI and the real
 // §4.2 network guard, with the mirror and keys responses served from files.
 //

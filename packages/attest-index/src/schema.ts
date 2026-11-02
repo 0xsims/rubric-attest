@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Attestation index schema (tasks/P2.md). One row per attested leaf; the row
  * mirrors the DAR core identity plus the service `attestationId` and a pointer

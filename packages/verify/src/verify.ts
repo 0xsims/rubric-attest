@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * Assemble a decision-verify result from a stored bundle (tasks/P4.md).
  *

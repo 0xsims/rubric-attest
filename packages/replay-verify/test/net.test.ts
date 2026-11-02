@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /** The §4.2 allowlist, enforced by the one fetch wrapper. */
 import { describe, expect, it, vi } from "vitest";
 import { KEYS_FALLBACK_URL, KEYS_URL, DEFAULT_MIRROR, DEFAULT_TOPIC } from "../src/constants.js";

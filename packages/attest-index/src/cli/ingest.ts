@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * CLI: ingest attestation-index.jsonl (anchor links) and the DAR bundles into the index.
  *   rubric-index-ingest <attestation-index.jsonl> <bundle-store-dir> <index-dir>

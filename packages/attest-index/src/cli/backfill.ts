@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * CLI: rebuild the attestation index from a bundle store.
  *   rubric-index-backfill <bundle-store-dir> <index-dir>

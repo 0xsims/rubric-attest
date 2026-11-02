@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 import { describe, it, expect } from "vitest";
 import { sha3_256 } from "@rubric-protocol/attest-decision";
 import { assembleVerification } from "../src/index.js";

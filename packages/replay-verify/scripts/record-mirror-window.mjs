@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 // Record the mirror messages tenprint-verify would read for one anchor, so a real
 // mainnet case can be replayed offline by test/mainnet.test.ts.
 //

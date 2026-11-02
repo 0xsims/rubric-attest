@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 Echelon Intelligence Group LLC
 /**
  * The three `rubric-anchor/2` tree levels (spec §2.5), written from the
  * constructions, not copied from rubric-protocol. Golden vectors generated from
